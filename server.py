@@ -2,13 +2,17 @@ import socket
 import threading
 import random
 import time
+import json
 
 SERVER = 'localhost'
 PORT = 1234
 # CHANGE THIS NUMBER TO # OF CLIENTS YOU WANT RUNNING
-NUM_PLAYERS = 4
+NUM_PLAYERS = 1
 # may have to adjust buf size
 BUF_SIZE = 1024
+
+global game_live
+game_live = False
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -21,37 +25,49 @@ sock.listen(NUM_PLAYERS)
 
 egg_count = 0
 egg_coords = []
+
+player_count = 0
+ready_count = 0
+mouse_coords = [(0,0), (0,0), (0,0), (0,0)]
+
+
+def generate_egg_position():
+    return (random.randint(0, 7)*100, random.randint(0, 7)*100)
+
 def threaded_eggs():
     global egg_count
-    max_eggs = 10
+    max_eggs = 20
     while True:
         if egg_count != max_eggs:
-            pos = (random.randint(0, 600), random.randint(0, 600))
-            egg_coords.append(pos)
-            egg_count += 1
-            time.sleep(0.5)
-            print(egg_coords) 
+            if random.random()>0.5 and game_live:
+
+                pos = generate_egg_position()
+                while pos in egg_coords:
+                    pos = generate_egg_position()
+
+               
+                egg_coords.append(pos)
+                egg_count += 1
+            time.sleep(1)
         else:
             time.sleep(1)
     
 
 def read_coords(coords):
-    coords = coords.split(",")
-    return int(coords[0]), int(coords[1])
-
-def make_coords(coords):
-    return str(coords[0]) + "," + str(coords[1])
-
-def send_coords(coords):
-    str = ""
-    for coord in coords:
-        str += make_coords(coord) + "|"
+    data_dic = json.loads(coords)
     
-    return str[:-1]
+    return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
 
-player_count = 0
-ready_count = 0
-mouse_coords = [(0,0), (0,0), (0,0), (0,0)]
+def encode_coords(coords,coord_type):
+    #returns json string of the form {"mouse_coords": [(player_1_x,player_1_y),(player_2_x,player_2_y),ect...]}
+    coords_list = list()
+    for coord in coords:
+        coords_list.append((coord[0],coord[1]))
+    
+    if coord_type == "mouse":
+        return json.dumps({"mouse_coords":coords_list})
+    if coord_type == "egg":
+        return json.dumps({"egg_coords":coords_list})
 
 def threaded_client(conn, player_num):
     global ready_count, player_count
@@ -62,7 +78,10 @@ def threaded_client(conn, player_num):
     # busy wait -- there is definitely a better solution
     # or just remove the feature of waiting for everyone to join
     while ready_count != NUM_PLAYERS:
-        pass
+        time.sleep(0.5)
+
+    global game_live
+    game_live = True
 
     # assigns player num, client uses to determine other clients data
     conn.send(str.encode(str(player_num)))
@@ -86,11 +105,11 @@ def threaded_client(conn, player_num):
                 data = conn.recv(BUF_SIZE)
                 coords = read_coords(data.decode())
                 mouse_coords[player_num] = coords
-                conn.send(str.encode(send_coords(mouse_coords)))
+                conn.send(str.encode(encode_coords(mouse_coords,"mouse")))
 
             # sends all clients egg coordinates
             elif msg == "EGG":
-                conn.send(str.encode(send_coords(egg_coords)))
+                conn.send(str.encode(encode_coords(egg_coords,'egg')))
 
     print("Connection lost...")
     conn.close()

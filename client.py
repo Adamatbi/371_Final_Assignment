@@ -2,6 +2,7 @@ import random
 
 import pygame
 import os
+import json
 
 from client_service import ClientService
 
@@ -102,40 +103,35 @@ def show_menu():
 
     main()
 
-def read_coords(coords):
-    coords = coords.split(',')
-    return int(coords[0]), int(coords[1])
-
 def make_coords(coords):
-    return str(coords[0]) + "," + str(coords[1])
+    return json.dumps({"mouse_coords":[(coords[0],coords[1])]})
 
 # Handles drawing the eggs for all players
 def egg_handler():
     # Request server for egg coordinates
     coords = service.send("EGG")
-
+    coords_dic = json.loads(coords)
     # Draw eggs with server provided coordinates
-    coords_lst = coords.split('|')
+ 
+    coords_lst = coords_dic["egg_coords"]
     for i, coord in enumerate(coords_lst):
-        egg_pos = read_coords(coord)
-        win.blit(easteregg, egg_pos)
+        win.blit(easteregg, coord)
 
 # Handles drawing coords and sending information to server to update other clients of position
 def mouse_handler():
     # get player cursor coords
     pos = pygame.mouse.get_pos()
     
-    
     # request other player's mice coordinates
     msg = service.send("MOUSE")
     coords = service.send(make_coords(pos))
-     
+    coords_dic = json.loads(coords)
     # draw every cursor except players own cursor
-    coords_lst = coords.split('|')
+    coords_lst = coords_dic['mouse_coords']
+    
     for i, coord in enumerate(coords_lst):
-        other_pos = read_coords(coord)
         if i != player_num:
-            win.blit(cursors[i], other_pos)
+            win.blit(cursors[i], coord)
 
     # draw player cursor on top of other players
     win.blit(cursors[player_num], pos)
