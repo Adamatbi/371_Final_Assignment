@@ -28,7 +28,7 @@ egg_coords = []
 
 player_count = 0
 ready_count = 0
-mouse_coords = [(0,0), (0,0), (0,0), (0,0)]
+mouse_coords = [(0,0)] * NUM_PLAYERS
 
 
 def generate_egg_position():
@@ -110,6 +110,21 @@ def threaded_client(conn, player_num):
             # sends all clients egg coordinates
             elif msg == "EGG":
                 conn.send(str.encode(encode_coords(egg_coords,'egg')))
+            
+            # a player clicked, check if on egg
+            else:
+                # if msg in egg_coords:
+                click_coords = msg.split(',')
+                click_coords[0] = ((int(click_coords[0]))//100)*100
+                click_coords[1] = ((int(click_coords[1]))//100)*100
+                # prob lock mutex here
+                if tuple(click_coords) in egg_coords:
+                    egg_coords.remove(tuple(click_coords))
+                    conn.send(str.encode("clicked"))
+                # did not click an egg
+                else:
+                    conn.send(str.encode("missed"))
+
 
     print("Connection lost...")
     conn.close()

@@ -6,6 +6,8 @@ import json
 
 from client_service import ClientService
 
+NUM_PLAYERS = 1
+
 # Initialize the pygame
 pygame.init()
 
@@ -23,10 +25,15 @@ easterbg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easterb
 easteregg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easteregg.png")), (100, 100))
 
 # Player Cursors
-cursors = [pygame.transform.scale(pygame.image.load(os.path.join("img", "p1.png")), (50, 50)),
-           pygame.transform.scale(pygame.image.load(os.path.join("img", "p2.png")), (50, 50)),
-           pygame.transform.scale(pygame.image.load(os.path.join("img", "p3.png")), (50, 50)),
-           pygame.transform.scale(pygame.image.load(os.path.join("img", "p4.png")), (50, 50))]
+# cursors = [pygame.transform.scale(pygame.image.load(os.path.join("img", "p1.png")), (50, 50)),
+#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p2.png")), (50, 50)),
+#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p3.png")), (50, 50)),
+#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p4.png")), (50, 50))]
+# player_num = -1
+
+cursors = [None] * NUM_PLAYERS
+for i in range(0, NUM_PLAYERS):
+    cursors[i] = pygame.transform.scale(pygame.image.load(os.path.join("img", f"p{i+1}.png")), (50, 50))
 player_num = -1
 
 # Font
@@ -65,9 +72,14 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
-                # send to pos to server
+                # send pos to server
+                print(pos)
+                reply = service.send(','.join(map(str, pos)))
+                print(reply)
                 # server will have database for positions of eggs
                 # if pos is in certain range (we have to choose), server will give a score to the player
+                # if reply == 'clicked':
+
                 # That egg will be locked
 
         # Test: Calculate countdown for game
