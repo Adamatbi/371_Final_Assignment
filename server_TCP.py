@@ -17,22 +17,22 @@ import egg
 #Class ServerRoom:
 class ServerRoom:
     #----------------------------------------------------
-    #PROPERTIES
+    # PROPERTIES
     #----------------------------------------------------
 
-    #ServerRoom's configuratio - The default configuration
+    # ServerRoom's configuratio - The default configuration
     SERVERSOCK = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     SERVERADDRESS = "127.1.1.1"
     SERVERPORT = 1234
     SERVERBUF_SIZE = 1024
     MAX_NUM_PLAYERS = 4
     
-    #User_Management information & Data 
+    # User_Management information & Data 
     CONNECTED_PLAYERS = 0
     READY_PLAYERS = 0
     LST_PLAYER_THREAD = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
 
-    #Gameplay Information & Data
+    # Gameplay Information & Data
     
     # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
     # New Eggs will be added to the dictionary
@@ -44,10 +44,10 @@ class ServerRoom:
 
 
     #----------------------------------------------------
-    #GENERAL_ADMIN FUNCTIONS
+    # GENERAL_ADMIN FUNCTIONS
     #----------------------------------------------------
 
-    #__init__() - The constructor of class Server
+    # __init__() - The constructor of class Server
     def __init__(self, serverAddress, serverPort, bufferSize, maxNumPlayers):
         self.SERVERADDRESS = serverAddress
         self.SERVERPORT = serverPort
@@ -61,22 +61,20 @@ class ServerRoom:
         udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
         return None
 
-    #generateEggs() - generate (randomly) the egg object, assign data, and add to the DICT_EGGS_OBJ
+    # generateEggs() - generate (randomly) the egg object, assign data, and add to the DICT_EGGS_OBJ
     def generateEggs(self):
         pass
 
-    #convertMsgToJson() - convert the message to json file
+    # convertMsgToJson() - convert the message to json file
     def convertMsgToJson(self):
         pass
 
-    #
-
 
     #----------------------------------------------------
-    #NETWORK_ADMIN FUNCTIONS
+    # NETWORK_ADMIN FUNCTIONS
     #----------------------------------------------------
 
-    #handleClientCommunication() - this will be a separate thread for each clients connect to server
+    # handleClientCommunication() - this will be a separate thread for each clients connect to server
     def handleClientCommunication(conn, player_num):
         global ready_count, player_count
         conn.send(str.encode("Connection established"))
@@ -124,8 +122,8 @@ class ServerRoom:
         conn.close()
 
 
-    #AddNewPlayer() - for each new player, increase number of connected players by 1
-    def AddNewPlayer(self, playerConnection, playerAddress):
+    # addNewPlayer() - for each new player, increase number of connected players by 1
+    def addNewPlayer(self, playerConnection, playerAddress):
         #Create & start the thread for each client's communication:
         playerThread = threading.Thread(target= self.handleClientCommunication, args=(playerConnection, playerAddress))
         
@@ -137,8 +135,8 @@ class ServerRoom:
         return 1
 
 
-    #serverBinding() - establish the server on local host, bind and listen on the port
-    #also store the thread object (of each player) into LST_PLAYER_THREAD
+    # serverBinding() - establish the server on local host, bind and listen on the port
+    # also store the thread object (of each player) into LST_PLAYER_THREAD
     def establishConnectOnRoom(self):
         try:
             self.SERVERSOCK.bind((self.SERVERADDRESS, self.SERVERPORT))
