@@ -13,6 +13,7 @@ class ServerRoom:
     #----------------------------------------------------
     #PROPERTIES
     #----------------------------------------------------
+
     #ServerRoom's configuratio - The default configuration
     SERVERSOCK = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     SERVERADDRESS = "127.1.1.1"
@@ -29,14 +30,11 @@ class ServerRoom:
     DICT_EGGS_OBJ = {}                  # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
 
 
-
-
     #----------------------------------------------------
     #GENERAL_ADMIN FUNCTIONS
     #----------------------------------------------------
 
     #__init__() - The constructor of class Server
-    #input: serverName
     def __init__(self, serverAddress, serverPort, bufferSize, maxNumPlayers):
         self.SERVERADDRESS = serverAddress
         self.SERVERPORT = serverPort
@@ -50,10 +48,62 @@ class ServerRoom:
         udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
         return None
 
-    #AddNewPlayer - for each new player, increase number of connected players by 1
+
+    #----------------------------------------------------
+    #NETWORK_ADMIN FUNCTIONS
+    #----------------------------------------------------
+
+    #handleClientCommunication() - this will be a separate thread for each clients connect to server
+    def handleClientCommunication(conn, player_num):
+        global ready_count, player_count
+        conn.send(str.encode("Connection established"))
+        conn.recv(BUF_SIZE)
+        ready_count += 1
+     
+        # busy wait -- there is definitely a better solution
+        # or just remove the feature of waiting for everyone to join
+        while ready_count != NUM_PLAYERS:
+            time.sleep(0.5)
+
+        global game_live
+        game_live = True
+
+        # assigns player num, client uses to determine other clients data
+        conn.send(str.encode(str(player_num)))
+
+        while True:
+            data = conn.recv(BUF_SIZE)
+            msg = data.decode()
+            
+            # if someone leaves, make room for another person to join
+            # could probably be handled better -- quite buggy atm
+            if not data:
+                print("Disconnecting...")
+                ready_count -= 1
+                player_count -= 1 
+                break
+            else:
+                # protocols for client info
+                if msg == "MOUSE":
+                    # sends clients other clients cursor coordinates
+                    conn.send(str.encode("ready for coords from player " + str(player_num)))
+                    data = conn.recv(BUF_SIZE)
+                    coords = read_coords(data.decode())
+                    mouse_coords[player_num] = coords
+                    conn.send(str.encode(encode_coords(mouse_coords,"mouse")))
+
+                # sends all clients egg coordinates
+                elif msg == "EGG":
+                    conn.send(str.encode(encode_coords(egg_coords,'egg')))
+
+        print("Connection lost...")
+        conn.close()
+
+
+    #AddNewPlayer() - for each new player, increase number of connected players by 1
     def AddNewPlayer(self, playerConnection, playerAddress):
         #Create & start the thread for each client's communication:
-        playerThread = threading.Thread(target= self.handlePlayerThread, args=(playerConnection, playerAddress))
+        playerThread = threading.Thread(target= self.handleClientCommunication, args=(playerConnection, playerAddress))
         
         #Start the player thread:
         playerThread.start()
@@ -63,10 +113,6 @@ class ServerRoom:
         return 1
 
 
-
-    #----------------------------------------------------
-    #NETWORK_ADMIN FUNCTIONS
-    #----------------------------------------------------
     #serverBinding() - establish the server on local host, bind and listen on the port
     #also store the thread object (of each player) into LST_PLAYER_THREAD
     def establishConnectOnRoom(self):
@@ -88,57 +134,8 @@ class ServerRoom:
 
             #Send confirmation message to the client/player
             NewConnection.send(bytes("Player {}".format(NewAddress),"utf-8"))
-            print("Player {} has started".format(self.LST_PLAYER_THREAD[NewAddress].getName()))
-        
+            
+            #Print confirmation message on the server's screen
+            print("{} has started".format(self.LST_PLAYER_THREAD[NewAddress].getName()))
         return None       
     
-    #
-    def handlePlayerThread(self, clientConnection, clientAddress):
-        print("This is the new thread for {}".format(clientAddress))
-        return
-            
-
-"""
-
-def threaded_client(conn, player_num):
-    global ready_count, player_count
-    conn.send(str.encode("Connection established"))
-    conn.recv(BUF_SIZE)
-    ready_count += 1
- 
-    # busy wait -- there is definitely a better solution
-    # or just remove the feature of waiting for everyone to join
-    while ready_count != NUM_PLAYERS:
-        pass
-
-    # assigns player num, client uses to determine other clients data
-    conn.send(str.encode(str(player_num)))
-
-    while True:
-        data = conn.recv(BUF_SIZE)
-        msg = data.decode()
-        
-        # if someone leaves, make room for another person to join
-        # could probably be handled better -- quite buggy atm
-        if not data:
-            print("Disconnecting...")
-            ready_count -= 1
-            player_count -= 1 
-            break
-        else:
-            # protocols for client info
-            if msg == "MOUSE":
-                # sends clients other clients cursor coordinates
-                conn.send(str.encode("ready for coords from player " + str(player_num)))
-                data = conn.recv(BUF_SIZE)
-                coords = read_coords(data.decode())
-                mouse_coords[player_num] = coords
-                conn.send(str.encode(send_coords(mouse_coords)))
-
-            # sends all clients egg coordinates
-            elif msg == "EGG":
-                conn.send(str.encode(send_coords(egg_coords)))
-
-    print("Connection lost...")
-    conn.close()
-"""
