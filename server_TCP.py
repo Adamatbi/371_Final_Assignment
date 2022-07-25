@@ -30,14 +30,20 @@ class ServerRoom:
     # User_Management information & Data 
     CONNECTED_PLAYERS = 0
     READY_PLAYERS = 0
-    LST_PLAYER_THREAD = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
+    GAME_LIVE = False
+    PLAYER_THREAD = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
+    OTHER_THREAD = []                   # List of other thread
 
     # Gameplay Information & Data
-    
+    MAX_EGGS = 20
+    EGG_COUNT = 0
     # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
     # New Eggs will be added to the dictionary
     # Loop through Dictionary of eggs -> Sum with PlayerID -> get score for each player -> store in PLAYER_SUMMARY 
     DICT_EGGS_OBJ = {}
+
+    # Stack to store all finished eggs
+    STACK_FINISH_EGG = []       
 
     # Dictionary of players: key - playerID | value: players' score
     PLAYER_SUMMARY = {}
@@ -54,15 +60,34 @@ class ServerRoom:
         self.SERVERBUF_SIZE = bufferSize
         self.MAX_NUM_PLAYERS = maxNumPlayers
 
-    #sendInvitationToRoom() - allow the host to send his/her address & port number (of the room) to the client
+    # sendInvitationToRoom() - allow the host to send his/her address & port number (of the room) to the client
     #this is one time message - user's have to trigger manually each time
     def sendInvitationToJoinRoom(self, clientAddress, clientPortNumber):
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
         return None
 
-    # generateEggs() - generate (randomly) the egg object, assign data, and add to the DICT_EGGS_OBJ
-    def generateEggs(self):
+    # generateEggPosition() - randomly
+    def generateEggPosition(self):
+        pos = (-1,-1)
+        while pos == (-1,-1) or pos in self.DICT_EGGS_OBJ:    
+            pos = (random.randint(0, 7)*100, random.randint(0, 7)*100)
+        return pos
+
+    def generateEggsRandomly(self):
+        timeToCount = 
+        while self.GAME_LIVE:
+            time.sleep(1)
+            if self.EGG_COUNT < self.MAX_EGGS and random.random() > 0.5:
+                pos = self.generateEggPosition()
+
+                # Store Eggs object into DICT_EGGS_OBJ & increase EGG_COUNT
+                # EggNode(xCoordinate, yCoordinate, visible, lock, occupy, points)
+                self.DICT_EGGS_OBJ[pos] = egg.EggNode(pos[0], pos[1], True, True, True, 1)
+                self.EGG_COUNT += 1
+
+    # generateEggs() - if the egg is occupied by players -> remove from DICT_EGGS_OBJ -> move it to STACK_FINISH_EGG
+    def collectedEggs(self):
         pass
 
     # convertMsgToJson() - convert the message to json file
@@ -83,11 +108,8 @@ class ServerRoom:
      
         # busy wait -- there is definitely a better solution
         # or just remove the feature of waiting for everyone to join
-        while ready_count != NUM_PLAYERS:
+        while self.READY_PLAYERS != self.CONNECTED_PLAYERS:
             time.sleep(0.5)
-
-        global game_live
-        game_live = True
 
         # assigns player num, client uses to determine other clients data
         conn.send(str.encode(str(player_num)))
@@ -131,7 +153,7 @@ class ServerRoom:
         playerThread.start()
         
         #Add player thread to thread list for future calls - key is playerAddress | value is playerThread
-        self.LST_PLAYER_THREAD[playerAddress] = playerThread
+        self.PLAYER_THREAD[playerAddress] = playerThread
         return 1
 
 
@@ -158,6 +180,33 @@ class ServerRoom:
             NewConnection.send(bytes("Player {}".format(NewAddress),"utf-8"))
             
             #Print confirmation message on the server's screen
-            print("{} has started".format(self.LST_PLAYER_THREAD[NewAddress].getName()))
-        return None       
+            print("{} has started".format(self.PLAYER_THREAD[NewAddress].getName()))
+        return None
+
+    # startTheGame() - after all players in "Ready" mode -> the host can click "Start" to trigger the game
+    def startTheGame(self):
+        # While the game is running 
+        while self.GAME_LIVE:
+            # Constanly Listening message
+
+
+            # Sending Message if any update
+
+        pass
+
+    # endTheGame() - join all threads in PLAYER_THREAD & OTHER_THREAD
+    def endTheGame(self):
+
+        # send the final score to all players
+
+
+        # kill PLAYER_THREAD 
+        for threads in self.PLAYER_THREAD:
+            self.PLAYER_THREAD[threads].join()
+
+        # kill OTHER_THREAD
+        for threads in self.OTHER_THREAD:
+            self.OTHER_THREAD[threads].join()
+
+        return None
     
