@@ -1,12 +1,12 @@
 import random
 import json
 import threading
-from typing import Dict
+import time
 
 EGG_SEM = threading.Semaphore()
 
 # CHANGE THIS NUMBER TO # OF CLIENTS YOU WANT RUNNING
-NUM_PLAYERS = 1
+NUM_PLAYERS = 2
 
 egg_count = 0
 egg_coords = []
@@ -18,7 +18,28 @@ ready_count = 0
 player_scores = [0] * NUM_PLAYERS
 mouse_coords = [(0,0)] * NUM_PLAYERS
 
-game_live = False
+
+def threaded_eggs():
+    global egg_count
+    while True:
+        if egg_count != MAX_EGGS:
+            # generate eggs
+            pos = generate_egg_position()
+            # acquire semaphore
+            EGG_SEM.acquire()
+            # generate coordinates for new egg that are not already taken
+            while pos in egg_coords:
+                pos = generate_egg_position()
+            # add new egg to list of eggs
+            egg_coords.append(pos)
+            egg_count += 1
+            # release semaphore
+            EGG_SEM.release()
+        else:
+            print('max eggs reached')
+
+        time.sleep(1)
+
 
 def generate_egg_position():
     return (random.randint(0, 7)*100, random.randint(0, 7)*100)
@@ -39,6 +60,7 @@ def encode_coords(coords,coord_type):
 
 
 def check_coords(msg, player):
+    global egg_count
     # format the string into tuple of ints
     click_coords = msg.split(',')
     click_coords[0] = ((int(click_coords[0]))//100)*100
@@ -51,7 +73,7 @@ def check_coords(msg, player):
         egg_coords.remove(click_coords)
         # lock the egg
         locked_eggs[player] = click_coords
-        # egg_count -= 1
+        egg_count -= 1
         EGG_SEM.release()
         return True
     # if did not click an egg
@@ -60,19 +82,24 @@ def check_coords(msg, player):
         return False
     
 # upon mouse release, check if player successfully got egg
-def validate(msg, player):
+def validate(msg, player, elapsed):
     click_coords = msg.split(',')
     click_coords[0] = ((int(click_coords[0]))//100)*100
     click_coords[1] = ((int(click_coords[1]))//100)*100
     click_coords = tuple(click_coords)
-    
+    print(msg)
+    print(player)
+    print(elapsed)
     # if valid
-    if locked_eggs[player] == click_coords:
+    EGG_SEM.acquire()
+    if float(elapsed) >= 5 and locked_eggs[player] == click_coords:
         locked_eggs.pop(player)
+        EGG_SEM.release()
         return True
     else:
         egg_coords.append(locked_eggs[player])
         locked_eggs.pop(player)
+        EGG_SEM.release()
         return False
 
 def inc_score(player_num):

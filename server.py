@@ -10,27 +10,6 @@ PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
 
-def threaded_eggs():
-    game_live = True
-    while True:
-        if game_live and program_master.egg_count != program_master.MAX_EGGS:
-            # generate eggs
-            # unsure why there is this if statement
-            # if random.random()>0.5 and game_live:
-            pos = program_master.generate_egg_position()
-            # acquire semaphore
-            program_master.EGG_SEM.acquire()
-            # generate coordinates for new egg that are not already taken
-            while pos in program_master.egg_coords:
-                pos = program_master.generate_egg_position()
-            program_master.egg_coords.append(pos)
-            program_master.egg_count += 1
-            # release semaphore
-            program_master.EGG_SEM.release()
-        else:
-            print('max eggs reached')
-
-        time.sleep(1)
 
 def threaded_client(conn, player_num):
     conn.send(str.encode("Connection established"))
@@ -61,6 +40,9 @@ def threaded_client(conn, player_num):
             if msg == "READY":
                 conn.send(str.encode(str(player_num)))
 
+            elif msg == "NUM":
+                conn.send(str.encode(str(program_master.NUM_PLAYERS)))
+
             elif msg == "MOUSE":
                 # sends clients other clients cursor coordinates
                 conn.send(str.encode("ready for coords from player " + str(player_num)))
@@ -88,8 +70,10 @@ def threaded_client(conn, player_num):
 
             # received a pair of coords to validate
             elif msg[0] == "V":
+                print(msg)
                 msg = msg[1:]
-                if program_master.validate(msg, player_num):
+                msg = msg.split(':')
+                if program_master.validate(msg[0], player_num, msg[1]):
                     conn.send(str.encode("true"))
                 else:
                     conn.send(str.encode("false"))
@@ -114,7 +98,7 @@ def main():
 
     sock.listen(program_master.NUM_PLAYERS)
     
-    threading.Thread(target=threaded_eggs, args=()).start()
+    threading.Thread(target=program_master.threaded_eggs, args=()).start()
 
     while True:
         print("Waiting...")

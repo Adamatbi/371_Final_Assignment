@@ -6,10 +6,24 @@ import json
 import time
 
 from client_service import ClientService
-import program_master
+
+# Color
+RED = (255, 0, 0)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
 # Initialize the pygame
 pygame.init()
+
+# Font
+FONT100 = pygame.font.SysFont("comics", 100)
+FONT60 = pygame.font.SysFont("comics", 60)
+FONT30 = pygame.font.SysFont("comics", 20)
+
+# helper function to write text on pygame window
+def draw_text(text, font, color, x, y):
+    img = font.render(text, True, color)
+    win.blit(img, (x, y))
 
 # Create the window and clock
 width = 700
@@ -25,33 +39,18 @@ easterbg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easterb
 easteregg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easteregg.png")), (100, 100))
 easteregglocked = pygame.transform.scale(pygame.image.load(os.path.join("img", "easteregglocked.png")), (100, 100))
 
-# Player Cursors
-cursors = [None] * program_master.NUM_PLAYERS
-for i in range(0, program_master.NUM_PLAYERS):
-    cursors[i] = pygame.transform.scale(pygame.image.load(os.path.join("img", f"p{i+1}.png")), (50, 50))
-player_num = -1
 
-# Font
-font100 = pygame.font.SysFont("comics", 100)
-font60 = pygame.font.SysFont("comics", 60)
-font30 = pygame.font.SysFont("comics", 20)
-
-# Color
-red = (255, 0, 0)
-white = (255, 255, 255)
-black = (0, 0, 0)
-
-service = ClientService()
-# Easy to calculate position (Temporary)
-# test = pygame.transform.scale(pygame.image.load(os.path.join("img", "test.png")), (700, 700))
-
-def draw_text(text, font, color, x, y):
-    img = font.render(text, True, color)
-    win.blit(img, (x, y))
-
-def main():
+def client_loop(service, player_num):
+    num_players = service.send("NUM")
+    print(num_players)
+    num_players = int(num_players)
+     # Player Cursors
+    cursors = [None] * num_players
+    for i in range(0, num_players):
+        cursors[i] = pygame.transform.scale(pygame.image.load(os.path.join("img", f"p{i+1}.png")), (50, 50))
+    
     run = True
-    win.fill(white)
+    win.fill(WHITE)
     # countdown = 10
     last_count = pygame.time.get_ticks()
     pygame.mouse.set_visible(False)
@@ -62,16 +61,16 @@ def main():
     while run:
         
         clock.tick(60)
-        win.fill(white)
-        egg_handler()
-        mouse_handler()
+        win.fill(WHITE)
+        egg_handler(service)
+        mouse_handler(service, cursors, player_num)
         # print player scores
         scores = service.send("SCORES")
         scores = scores[1:-1]
         scores = scores.split(', ')
-        print(scores)
-        for i in range(0, program_master.NUM_PLAYERS):
-            draw_text(f"Player {i+1} Score: {scores[i]}", font30, black, i*200, 0)
+        # print(scores)
+        for i in range(0, num_players):
+            draw_text(f"Player {i+1} Score: {scores[i]}", FONT30, BLACK, i*200, 0)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -88,20 +87,14 @@ def main():
                 if reply == 'clicked':
                     click_flag = True
                     timer = time.time()
-                    # timer = time.ctime()
-                    # while pygame.mouse.get_pressed()==(1,0,0):
-                    #     print("mouse is clicked!!")
-                    
-                    # time_elapsed = time.ctime() - timer
-                    # if time_elapsed >= 5 and pos == pygame.mouse.get_pos():
                     
             elif click_flag and event.type == pygame.MOUSEBUTTONUP:
                 elapsed = time.time() - timer
                 click_flag = False
                 pos = pygame.mouse.get_pos()
                 val = (','.join(map(str, pos)))
-                valid = service.send(f'V{val}')
-                if valid == "true" and elapsed >= 5:
+                valid = service.send(f'V{val}:{elapsed}')
+                if valid == "true":
                     service.send('INC_SCORE')
 
         # Test: Calculate countdown for game
@@ -117,12 +110,16 @@ def main():
 
         pygame.display.update()
 
-def show_menu():
+def main():
+    service = ClientService()
     run = True
     win.blit(easterbg, (0, 0))
-    draw_text("Easter Egg Game", font100, red, 70, 50)
-    draw_text("Click to Play!", font60, red, 220, 400)
+    draw_text("Easter Egg Game", FONT100, RED, 70, 50)
+    draw_text("Click to Play!", FONT60, RED, 220, 400)
     pygame.display.update()
+
+    # initialized later via connection_handler
+    player_num = -1
 
     while run:
         for event in pygame.event.get():
@@ -131,17 +128,19 @@ def show_menu():
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 # Wait for other players
-                connection_handler()
+                player_num = connection_handler(service)
                 # Begin game
                 run = False
 
-    main()
+    client_loop(service, player_num)
+
 
 def make_coords(coords):
     return json.dumps({"mouse_coords":[(coords[0],coords[1])]})
 
+
 # Handles drawing the eggs for all players
-def egg_handler():
+def egg_handler(service):
     # Request server for egg coordinates
     coords = service.send("EGG")
     coords_dic = json.loads(coords)
@@ -160,8 +159,9 @@ def egg_handler():
     for i, coord in enumerate(coords_lst):
         win.blit(easteregglocked, coord)
 
+
 # Handles drawing coords and sending information to server to update other clients of position
-def mouse_handler():
+def mouse_handler(service, cursors, player_num):
     # get player cursor coords
     pos = pygame.mouse.get_pos()
     
@@ -179,14 +179,16 @@ def mouse_handler():
     # draw player cursor on top of other players
     win.blit(cursors[player_num], pos)
 
-def connection_handler():
-    global player_num 
+
+def connection_handler(service):
     win.blit(easterbg, (0, 0))
-    draw_text("Waiting on other players...", font60, red, 100, 300)
+    draw_text("Waiting on other players...", FONT60, RED, 100, 300)
     pygame.display.update()
 
     # Notifies server is ready, and server assigns player number
     player_num = int(service.send("READY"))
+    return player_num
 
-show_menu()
 
+if __name__=='__main__':
+    main()
