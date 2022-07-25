@@ -1,3 +1,9 @@
+"""
+server_TCP
+Task: Manage the communication between client and server
+
+"""
+
 from distutils.log import error
 from os import lstat
 import socket
@@ -27,7 +33,14 @@ class ServerRoom:
     LST_PLAYER_THREAD = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
 
     #Gameplay Information & Data
-    DICT_EGGS_OBJ = {}                  # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
+    
+    # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
+    # New Eggs will be added to the dictionary
+    # Loop through Dictionary of eggs -> Sum with PlayerID -> get score for each player -> store in PLAYER_SUMMARY 
+    DICT_EGGS_OBJ = {}
+
+    # Dictionary of players: key - playerID | value: players' score
+    PLAYER_SUMMARY = {}
 
 
     #----------------------------------------------------
@@ -47,6 +60,16 @@ class ServerRoom:
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
         return None
+
+    #generateEggs() - generate (randomly) the egg object, assign data, and add to the DICT_EGGS_OBJ
+    def generateEggs(self):
+        pass
+
+    #convertMsgToJson() - convert the message to json file
+    def convertMsgToJson(self):
+        pass
+
+    #
 
 
     #----------------------------------------------------
@@ -83,6 +106,7 @@ class ServerRoom:
                 player_count -= 1 
                 break
             else:
+                ##### This part need to be reviewed ######
                 # protocols for client info
                 if msg == "MOUSE":
                     # sends clients other clients cursor coordinates
