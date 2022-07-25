@@ -67,13 +67,14 @@ class ServerRoom:
         udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
         return None
 
-    # generateEggPosition() - randomly
+    # generateEggPosition() - randomly generate the position for the new egg
     def generateEggPosition(self):
         pos = (-1,-1)
         while pos == (-1,-1) or pos in self.DICT_EGGS_OBJ:    
             pos = (random.randint(0, 7)*100, random.randint(0, 7)*100)
         return pos
 
+    # generateEggRandomly() - randomly generate the new egg object with random positions 
     def generateEggsRandomly(self):
         timeToCount = 
         while self.GAME_LIVE:
@@ -85,6 +86,7 @@ class ServerRoom:
                 # EggNode(xCoordinate, yCoordinate, visible, lock, occupy, points)
                 self.DICT_EGGS_OBJ[pos] = egg.EggNode(pos[0], pos[1], True, True, True, 1)
                 self.EGG_COUNT += 1
+        return None
 
     # generateEggs() - if the egg is occupied by players -> remove from DICT_EGGS_OBJ -> move it to STACK_FINISH_EGG
     def collectedEggs(self):
