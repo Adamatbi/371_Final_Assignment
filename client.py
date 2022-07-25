@@ -3,10 +3,10 @@ import random
 import pygame
 import os
 import json
+import time
 
 from client_service import ClientService
-
-NUM_PLAYERS = 1
+import program_master
 
 # Initialize the pygame
 pygame.init()
@@ -23,27 +23,23 @@ pygame.display.set_caption("Easter Egg Game")
 # Backgroud and Image
 easterbg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easterbg.jpg")), (width, height))
 easteregg = pygame.transform.scale(pygame.image.load(os.path.join("img", "easteregg.png")), (100, 100))
+easteregglocked = pygame.transform.scale(pygame.image.load(os.path.join("img", "easteregglocked.png")), (100, 100))
 
 # Player Cursors
-# cursors = [pygame.transform.scale(pygame.image.load(os.path.join("img", "p1.png")), (50, 50)),
-#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p2.png")), (50, 50)),
-#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p3.png")), (50, 50)),
-#            pygame.transform.scale(pygame.image.load(os.path.join("img", "p4.png")), (50, 50))]
-# player_num = -1
-
-cursors = [None] * NUM_PLAYERS
-for i in range(0, NUM_PLAYERS):
+cursors = [None] * program_master.NUM_PLAYERS
+for i in range(0, program_master.NUM_PLAYERS):
     cursors[i] = pygame.transform.scale(pygame.image.load(os.path.join("img", f"p{i+1}.png")), (50, 50))
 player_num = -1
 
 # Font
 font100 = pygame.font.SysFont("comics", 100)
 font60 = pygame.font.SysFont("comics", 60)
+font30 = pygame.font.SysFont("comics", 20)
 
 # Color
 red = (255, 0, 0)
 white = (255, 255, 255)
-
+black = (0, 0, 0)
 
 service = ClientService()
 # Easy to calculate position (Temporary)
@@ -60,27 +56,53 @@ def main():
     last_count = pygame.time.get_ticks()
     pygame.mouse.set_visible(False)
 
+    click_flag = False
+    timer = 0
+    
     while run:
+        
         clock.tick(60)
         win.fill(white)
         egg_handler()
         mouse_handler()
+        # print player scores
+        scores = service.send("SCORES")
+        scores = scores[1:-1]
+        scores = scores.split(', ')
+        print(scores)
+        for i in range(0, program_master.NUM_PLAYERS):
+            draw_text(f"Player {i+1} Score: {scores[i]}", font30, black, i*200, 0)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
 
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 # send pos to server
-                print(pos)
                 reply = service.send(','.join(map(str, pos)))
-                print(reply)
                 # server will have database for positions of eggs
                 # if pos is in certain range (we have to choose), server will give a score to the player
-                # if reply == 'clicked':
-
-                # That egg will be locked
+                print(reply)
+                if reply == 'clicked':
+                    click_flag = True
+                    timer = time.time()
+                    # timer = time.ctime()
+                    # while pygame.mouse.get_pressed()==(1,0,0):
+                    #     print("mouse is clicked!!")
+                    
+                    # time_elapsed = time.ctime() - timer
+                    # if time_elapsed >= 5 and pos == pygame.mouse.get_pos():
+                    
+            elif click_flag and event.type == pygame.MOUSEBUTTONUP:
+                elapsed = time.time() - timer
+                click_flag = False
+                pos = pygame.mouse.get_pos()
+                val = (','.join(map(str, pos)))
+                valid = service.send(f'V{val}')
+                if valid == "true" and elapsed >= 5:
+                    service.send('INC_SCORE')
 
         # Test: Calculate countdown for game
         # if countdown > 0:
@@ -123,11 +145,20 @@ def egg_handler():
     # Request server for egg coordinates
     coords = service.send("EGG")
     coords_dic = json.loads(coords)
+
     # Draw eggs with server provided coordinates
- 
     coords_lst = coords_dic["egg_coords"]
     for i, coord in enumerate(coords_lst):
         win.blit(easteregg, coord)
+
+    # Request server for locked egg coordinates
+    coords = service.send("LOCKED")
+    coords_dic = json.loads(coords)
+    
+    # Draw eggs with server provided coordinates
+    coords_lst = coords_dic["locked_coords"]
+    for i, coord in enumerate(coords_lst):
+        win.blit(easteregglocked, coord)
 
 # Handles drawing coords and sending information to server to update other clients of position
 def mouse_handler():
