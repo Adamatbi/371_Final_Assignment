@@ -17,41 +17,49 @@ class EggNode:
     __visibleState = True 
     __lockState = False
     __occupyState = False
-    __eggPoints = 0
-    __eggOwnerID = 0
+    __rewardPoints = 0
+    __ownerID = None
+
+    def __init__(self, xCoord, yCoord, visible, lock, occupy, points):
+        self.__xCoordinate = xCoord
+        self.__yCoordinate = yCoord
+        self.__visibleState = visible
+        self.__lockState = lock
+        self.__occupyState = occupy
+        self.__rewardPoints = points
 
     #----------------------------------------------------
     #SETTER_FUNCTIONS
     #----------------------------------------------------
-    #setCoordinate() - set the coordinate of the egg
+    # setCoordinate() - set the coordinate of the egg
     def setCoordinate(self, xCoord, yCoord):
         self.__xCoordinate = xCoord
         self.__yCoordinate = yCoord
         return None
 
-    #setVisibleState() - set the current state visible of the 
+    # setVisible() - set the current state visible of the 
     def setVisible(self, newVisibleState):
         self.__visibleState = newVisibleState
         return None
 
-    #setLockState() - set the current lock state of the egg
+    # setLock() - set the current lock state of the egg
     def setLock(self, newlockState):
         self.__lockState = newlockState
         return None
 
-    #setOccupyState() - set the current occupy state of the egg 
+    # setOccupy() - set the current occupy state of the egg 
     def setOccupy(self, newOccupyState):
         self.__occupyState = newOccupyState
         return None
     
-    #setEggPoints() - set the point for an egg
-    def setEggPoint(self, newEggPoints):
-        self.__eggPoints = newEggPoints
+    # setRewardPoint() - set the point for an egg
+    def setRewardPoint(self, newEggPoints):
+        self.__rewardPoints = newEggPoints
         return None
     
-    #setEggOwnerID() - set the new ower for an egg
+    # setEggOwnerID() - set the new ower for an egg
     def setEggOwnerID(self, newOwnerID):
-        self.__eggOwnerID = newOwnerID
+        self.__ownerID = newOwnerID
         return None
 
     #----------------------------------------------------
@@ -61,22 +69,22 @@ class EggNode:
     def getCoordinate(self):
         return [self.__xCoordinate, self.__yCoordinate]
 
-    #setVisibleState() - set the current state visible of the 
+    # isVisible() - set the current state visible of the 
     def isVisible(self):
         return self.__visibleState
 
-    #getLockState() - return the current lock state of an egg
+    # isLock() - return the current lock state of an egg
     def isLock(self):
         return self.__lockState
     
-    #getOccupyState - return the current occupy state of an egg
-    def isOccupied(self):
+    # isOccupy() - return the current occupy state of an egg
+    def isOccupy(self):
         return self.__occupyState
 
-    #getEggPoints() - return the point of an egg
-    def getEggPoint(self):
-        return self.__eggPoints
+    # getRewardPoint() - return the point of an egg
+    def getRewardPoint(self):
+        return self.__rewardPoints
 
-    #getOwnerID() - return the OnwerID of an egg
+    # getOwnerID() - return the OnwerID of an egg
     def getOwnerID(self):
-        return self.__eggOwnerID
+        return self.__ownerID
