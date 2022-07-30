@@ -38,7 +38,7 @@ def client_loop(game, service, player_num):
         scores = scores.split(', ')
         # print(scores)
         for i in range(0, num_players):
-            game.drawText(f"Player {i+1} Score: {scores[i]}", "comics", 20, BLACK, i*200, 0)
+            game.drawText(f"Player {i+1} Score: {scores[i]}", DEFAULT_FONT, 20, BLACK, i*200, 0)
 
         for event in game.getEvent():
             if event.type == game.QUIT:
@@ -148,7 +148,7 @@ def mouse_handler(game, service, cursors, player_num):
 def connection_handler(game, service):
     easterbg = game.loadImage("img", "easterbg.jpg", (700, 700))
     game.drawImage(easterbg, (0, 0))
-    game.drawText("Waiting on other players...", "comics", 60, RED, 100, 300)
+    game.drawText("Waiting on other players...", DEFAULT_FONT, 60, RED, 100, 300)
     game.updateDisplay()
 
     # Notifies server is ready, and server assigns player number
