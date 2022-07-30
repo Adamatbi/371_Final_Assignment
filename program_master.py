@@ -12,6 +12,7 @@ egg_count = 0
 egg_coords = []
 locked_eggs = {}
 MAX_EGGS = 20
+HOLD_TIME = 2
 
 player_count = 0
 ready_count = 0
@@ -92,7 +93,7 @@ def validate(msg, player, elapsed):
     print(elapsed)
     # if valid
     EGG_SEM.acquire()
-    if float(elapsed) >= 5 and locked_eggs[player] == click_coords:
+    if float(elapsed) >= HOLD_TIME and locked_eggs[player] == click_coords:
         locked_eggs.pop(player)
         EGG_SEM.release()
         return True
