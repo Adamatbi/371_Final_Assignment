@@ -34,7 +34,9 @@ class ServerRoom(threading.Thread):
     CONNECTED_PLAYERS = 0
     READY_PLAYERS = 0
     GAME_LIVE = False
-    PLAYER_RESULT = {}                # Dictionary of user info: key - PlayerID | value: Address & Port Number
+    COUNTDOWN_TIME = 0              # The value of COUNTDOWN_TIME will be in seconds
+    CURRENT_COUNTDOWN = 0
+    PLAYER_RESULT = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
     PLAYER_THREAD = {}              # Dictionary of Player
     OTHER_THREAD = []               # List of other thread
     MUTEX = threading.Lock()        # mutex for locking access to UNHATCHED
@@ -71,7 +73,19 @@ class ServerRoom(threading.Thread):
 
         # setup the connection 
         self.listenToPlayerOnRoom()
-        print("Work")
+
+        # setup the eggAdmin thread
+
+        # waiting for all player to be "READY" -> allow to start the game 
+        # if all players are "READY" -> set GAME_LIVE = True & set value for COUNTDOWN_TIME
+        # send both GAME_LIVE & COUNTDOWN_TIME to clients
+
+        # start countdown 
+
+        # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
+
+        # calculate the result -> send to all clients
+
         return None
 
 
@@ -91,8 +105,6 @@ class ServerRoom(threading.Thread):
 
         # listen to until achieve maximum number of player
         self.SERVERSOCK.listen(self.MAX_NUM_PLAYERS)
-        print(self.CONNECTED_PLAYERS)
-        print("Server is Up")
 
         # while until all connect
         while self.CONNECTED_PLAYERS < self. MAX_NUM_PLAYERS:
@@ -116,6 +128,7 @@ class ServerRoom(threading.Thread):
 
             # Trigger the thread
             playerThread.start()
+            print("Current ")
             self.CONNECTED_PLAYERS += 1
         return None
 
@@ -129,6 +142,7 @@ class ServerRoom(threading.Thread):
 
     # sendMsgToSinglePlayer() - send message to a particular players via playerAdmin
     def sendMsgToSinglePlayer(self, playerAdress, msgContent):
+
         # extract a particular player from PLAYER_THREAD by using address
         self.PLAYER_THREAD[playerAdress].sendMsgToPlayer(msgContent)
         return None
@@ -158,26 +172,6 @@ class ServerRoom(threading.Thread):
     #----------------------------------------------------
     # READ/WRITE WITH MUTEX FUNCTIONS
     #----------------------------------------------------
-
-
-    # # serverBinding() - establish the server on local host, bind and listen on the port
-    # # also store the thread object (of each player) into LST_PLAYER_THREAD
-    # def establishConnectOnRoom(self):
-    #     try:
-    #         self.SERVERSOCK.bind((self.SERVERADDRESS, self.SERVERPORT))
-    #     except socket.error as socketSetupError:
-    #         str(socketSetupError)
-
-    #     #listen on the port & address
-    #     self.SERVERSOCK.listen(self.MAX_NUM_PLAYERS)
-
-    #     #Establish the room - waiting until all players connection to the room
-    #     while self.CONNECTED_PLAYERS < self.MAX_NUM_PLAYERS:
-    #         #Accept the new connection - connection has been limited to MAX_NUM_PLAYERS
-    #         NewConnection, NewAddress = self.SERVERSOCK.accept()
-
-    #         #Create new thread with connection & address -> add to the list of thread & increse CONNECTED_PLAYERS
-    #         self.CONNECTED_PLAYERS += self.AddNewPlayer(NewConnection, NewAddress)
 
     #         #Send confirmation message to the client/player
     #         NewConnection.send(bytes("Player {}".format(NewAddress),"utf-8"))
