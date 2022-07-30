@@ -8,10 +8,9 @@ import socket
 import threading
 
 # playerThread - child of class Threading 
-class playerThread(threading.Thread):
+class playerAdmin(threading.Thread):
 	# playerThread configuration
 	CLIENTSOCKET = None
-	CLIENTADDRESS = None
 	BUF_SIZE = 1024
 	MUTEX = None
 
@@ -20,12 +19,11 @@ class playerThread(threading.Thread):
 	DICT_EGG = None 	# DICT_EGG - reference of DICT_EGG from server
 
 	# Constructor
-	def __init__(self, threadID, threadName, clientSocket, clientAddress, bufferSize, dictEggObj, mutex):
+	def __init__(self, clientAddress, threadName, clientSocket, bufferSize, dictEggObj, mutex):
 		threading.Thread.__init__(self)
-		self.threadID = threadID
+		self.threadID = clientAddress			# use clientAddress as threadID
 		self.name = threadName
-		self.CLIENTSOCKET = clientSocket
-		self.CLIENTADDRESS = clientAddress 
+		self.CLIENTSOCKET = clientSocket 
 		self.BUF_SIZE = bufferSize
 		self.DICT_EGG = dictEggObj
 		self.MUTEX = mutex
@@ -48,7 +46,7 @@ class playerThread(threading.Thread):
 
 			# valid request:
 			else:
-				#print("{}: {}".format(self.threadID, msgData))
+				print("{}: {}".format(self.threadID, msgData))
 				#react based on the client's request
 				#write the code here
 		return None
@@ -70,7 +68,7 @@ class playerThread(threading.Thread):
 		# If egg is not being locked/occupied by anyone 
 		# -> allow to lock the egg -> trigger notification of success/failure
 		try:
-			if egg.isLock() == False and egg.isOccupied == False:
+			if egg != None and egg.isLock() == False and egg.isOccupied == False:
 				# Switch lockState to True:
 				egg.setLock(True)
 				egg.setEggOwnerID = self.threadID
@@ -123,7 +121,8 @@ class playerThread(threading.Thread):
 
 	# sendMsgToPlayer() - send message back to clients
 	def sendMsgToPlayer(self, msgContent):
-		pass
+		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
+		return None
 
 	# prepNotification() - prepare notification message (send to clients)
 	def prepNotification(self, typeNotify, onObject):
