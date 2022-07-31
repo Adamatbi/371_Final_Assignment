@@ -8,38 +8,64 @@ import threading
 import egg
 import time
 import random
+import json
+
+class eggMsg:
+	DATATYPE = ""
+	OBJECTTYPE = ""
+	DATA = ""
+
+	# constructor
+	def __init__(self, dataType, objectType, objectData):
+		self.DATATYPE = dataType
+		self.OBJECTTYPE = objectType
+		self.DATA = objectData
 
 class eggAdmin(threading.Thread):
-	def __init__(self, threadID, threadName, setToDaemon, dictEggObj):
+	PLAYER_THREAD = None
+	DICT_EGG = None
+	FINAL_EGG = None
+	MAX_EGG = 0
+	GAME_LIVE = None
+
+	def __init__(self, threadID, threadName, playerThread, dictEggObj, finalEggObj, maxNumEggs, gameLive):
 		threading.Thread.__init__(self)
 		self.THREADID = threadID
 		self.THREADNAME = threadName
-		self.ISDAEMON = setToDaemon
-		self.DICT_EGG = dictEggObj 
+		self.PLAYER_THREAD = playerThread
+		self.DICT_EGG = dictEggObj
+		self.FINAL_EGG = finalEggObj 
+		self.MAX_EGG = maxNumEggs
+		self.GAME_LIVE = gameLive
 
 	# run() - override run() -> trigger the thread to start
-	def run(self, gameIsLive, maxNumEggs):
-		# while the game still running:
-		while gameIsLive:
+	def run(self):
+		while self.GAME_LIVE[0] == True:
+			time.sleep(random.randint(0,4))
+			#clear the not VISIBLE eggs:
+			#self.cleanHatchingEgg()
 
-			#if number of current eggs < than max number of eggs -> generate
-			if len(self.DICT_EGG) < maxNumEggs:
 
-				#sleep for random amount of time between 1 - 4 seconds
-				time.sleep(random.randint(0,4))
-
-				# generate new egg
+			# generate new egg at random rate
+			if (1 - len(self.DICT_EGG)/self.MAX_EGG) > 0.4:
 				newEggPos = self.generateEggPosition()
 
 				# Add new Egg into DICT_EGGS_OBJ
 				# EggNode(xCoordinate, yCoordinate, visible, lock, occupy, points)
-				newEggPos = egg.EggNode(newEggPos[0], newEggPos[1], True, True, True, 1)
+				newEgg = egg.EggNode(newEggPos[0], newEggPos[1], True, True, True, 1)
 				self.DICT_EGG[newEggPos] = newEggPos 
 				
 				# Send the egg object to client
-				print(newEggPos.getCoordinate())
+				sendEggMsg = self.prepMsgAsJson("data", newEgg)
+				print(self.convertToJson(sendEggMsg))
+				self.sendEggToClient(self.convertToJson(sendEggMsg))
 		return None
 
+	# sendEggToClient() - send egg to clients
+	def sendEggToClient(self, eggCoordinate):
+		for key in self.PLAYER_THREAD:
+			self.PLAYER_THREAD[key].CLIENTSOCKET.send(bytes(eggCoordinate,"utf-8"))
+		return None	
 
 	# generateEggPosition() - randomly generate the position for the new egg
 	def generateEggPosition(self):
@@ -47,3 +73,25 @@ class eggAdmin(threading.Thread):
 		while pos == (-1,-1) or pos in self.DICT_EGG:    
 			pos = (random.randint(0, 7)*100, random.randint(0,7)*100)
 		return pos
+
+	# cleanHatchingEgg() - remove all hatching eggs out of DICT_EGG
+	def cleanHatchingEgg(self):
+		for key in self.DICT_EGG:
+			# if egg no longer visible to draw -> move to FINAL_EGG:
+			if self.DICT_EGG[key].isVisible() == False:
+
+				# pop the egg out of DICT_EGG
+				egg = self.DICT_EGG.pop(key)
+
+				# append egg to FINAL_EGG list
+				self.FINAL_EGG.append(egg)
+		return None
+
+	# prepMsgAsJson()
+	def prepMsgAsJson(self, dataType, anyObject):
+		finalMsg = eggMsg(dataType, "Egg", self.convertToJson(anyObject))
+		return finalMsg
+
+	# convertEggToJson() - convert egg object to json format
+	def convertToJson(self, anyObject):
+		return json.dumps(anyObject.__dict__)
