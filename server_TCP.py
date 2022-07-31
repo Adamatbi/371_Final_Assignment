@@ -194,4 +194,3 @@ class ServerRoom(threading.Thread):
     #         #Print confirmation message on the server's screen
     #         print("{} has started".format(self.PLAYER_THREAD[NewAddress].getName()))
     #     return None
-
