@@ -28,27 +28,27 @@ class ServerRoom(threading.Thread):
     SERVERPORT = 1234
     SERVERBUF_SIZE = 1024
     FORMAT = "json"
-    MAX_NUM_PLAYERS = 4
+    MAXPLAYER = 2
     
     # User_Management information & Data 
     CONNECTED_PLAYERS = 0
     READY_PLAYERS = 0
-    GAME_LIVE = False
-    COUNTDOWN_TIME = 0              # The value of COUNTDOWN_TIME will be in seconds
-    CURRENT_COUNTDOWN = 0
+    GAME_LIVE = [False]
+    COUNTDOWN_TIME = 180            # The value of COUNTDOWN_TIME will be 180 seconds - 3 minutes
+    CURRENT_COUNTDOWN = 0           # Time to count down
     PLAYER_RESULT = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
     PLAYER_THREAD = {}              # Dictionary of Player
-    OTHER_THREAD = []               # List of other thread
+    EGGADMIN_THREAD = None          # EggAdmin thread -> manage/create/kill all eggs
     MUTEX = threading.Lock()        # mutex for locking access to UNHATCHED
 
     # Gameplay Information & Data
-    MAX_EGGS = 20
+    MAX_EGG = 20
 
     # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
     # New Eggs will be added to the dictionary - UNHATCHED
     # HATCHED-> Calculate final score -> store in PLAYER_SUMMARY 
-    UNHATCHED = {}       
-    HATCHED = []
+    UNHATCHED_EGG = {}       
+    HATCHED_EGG = []
 
     # Dictionary of players: key - playerID | value: players' score
     PLAYER_SUMMARY = []
@@ -65,16 +65,24 @@ class ServerRoom(threading.Thread):
         self.SERVERADDRESS = serverAddress
         self.SERVERPORT = serverPort
         self.SERVERBUF_SIZE = bufferSize
-        self.MAX_NUM_PLAYERS = maxNumPlayers
+        self.MAXPLAYER = maxNumPlayers
 
     # run() - start the object
     def run(self):
-        self.GAME_LIVE = True
 
         # setup the connection 
         self.listenToPlayerOnRoom()
 
+        print("Next step")
+
+        # Setup and run the egg
+        self.GAME_LIVE[0] = True
+        self.establishEggAdminThread()
+        self.EGGADMIN_THREAD.start()
         # setup the eggAdmin thread
+        while self.GAME_LIVE:
+            time.sleep(1)
+            
 
         # waiting for all player to be "READY" -> allow to start the game 
         # if all players are "READY" -> set GAME_LIVE = True & set value for COUNTDOWN_TIME
@@ -104,21 +112,22 @@ class ServerRoom(threading.Thread):
             str(socketSetupError)
 
         # listen to until achieve maximum number of player
-        self.SERVERSOCK.listen(self.MAX_NUM_PLAYERS)
+        self.SERVERSOCK.listen(self.MAXPLAYER)
 
+        print("SERVER IS UP")
         # while until all connect
-        while self.CONNECTED_PLAYERS < self. MAX_NUM_PLAYERS:
+        while self.CONNECTED_PLAYERS < self.MAXPLAYER:
 
             # accept client connection
-            clientSock, clientAddress = self.SERVERSOCK.accept()
+            clientSocket, clientAddress = self.SERVERSOCK.accept()
             print("{} has connected".format(clientAddress))
 
             # add player to the PLAYER_RESULT dictionary:
             self.PLAYER_RESULT[clientAddress] = 0
 
             # add player thread to the PLAYER_THREAD dictionary:
-            playerThread = playerMaster.playerAdmin(clientAddress, "player" + str(self.CONNECTED_PLAYERS), clientSock,
-                4096, self.UNHATCHED, self.MUTEX)
+            playerThread = playerMaster.playerAdmin(clientAddress, "player" + str(self.CONNECTED_PLAYERS),
+                clientSocket, self.PLAYER_THREAD,4096, self.UNHATCHED_EGG, self.MUTEX)
 
             # add player to PLAYER_THREAD
             self.PLAYER_THREAD[clientAddress] = playerThread
@@ -128,8 +137,19 @@ class ServerRoom(threading.Thread):
 
             # Trigger the thread
             playerThread.start()
-            print("Current ")
+
+            # Increase number of connected players
             self.CONNECTED_PLAYERS += 1
+            print(self.CONNECTED_PLAYERS)
+
+        return None
+
+    # establishEggAdminThread() - create the eggAdmin which manage the egg object
+    def establishEggAdminThread(self):
+        
+        # init the eggAdmin class:
+        self.EGGADMIN_THREAD = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.PLAYER_THREAD,
+            self.UNHATCHED_EGG, self.HATCHED_EGG, self.MAX_EGG, self.GAME_LIVE)
         return None
 
     # sendMsgToAllPlayer() - send message to all the clients via playerAdmin
@@ -146,11 +166,6 @@ class ServerRoom(threading.Thread):
         # extract a particular player from PLAYER_THREAD by using address
         self.PLAYER_THREAD[playerAdress].sendMsgToPlayer(msgContent)
         return None
-
-    # establishEggAdminThread() - create the eggAdmin which manage the egg object
-    def establishEggAdminThread(self):
-        pass
-
 
     # sendInvitationToRoom() - allow the host to send his/her address & port number (of the room) to the client
     #this is one time message - user's have to trigger manually each time
