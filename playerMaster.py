@@ -11,6 +11,7 @@ import threading
 class playerAdmin(threading.Thread):
 	# playerThread configuration
 	CLIENTSOCKET = None
+	PLAYER_THREAD = None
 	BUF_SIZE = 1024
 	MUTEX = None
 
@@ -19,11 +20,12 @@ class playerAdmin(threading.Thread):
 	DICT_EGG = None 	# DICT_EGG - reference of DICT_EGG from server
 
 	# Constructor
-	def __init__(self, clientAddress, threadName, clientSocket, bufferSize, dictEggObj, mutex):
+	def __init__(self, clientAddress, threadName, clientSocket, clientSocketThread, bufferSize, dictEggObj, mutex):
 		threading.Thread.__init__(self)
 		self.threadID = clientAddress			# use clientAddress as threadID
 		self.name = threadName
-		self.CLIENTSOCKET = clientSocket 
+		self.CLIENTSOCKET = clientSocket
+		self.PLAYER_THREAD = clientSocketThread 
 		self.BUF_SIZE = bufferSize
 		self.DICT_EGG = dictEggObj
 		self.MUTEX = mutex
@@ -47,7 +49,7 @@ class playerAdmin(threading.Thread):
 			# valid request:
 			else:
 				print("{}: {}".format(self.threadID, msgData))
-				#react based on the client's request
+				#self.sendMsgToPlayer("server got it!\n")
 				#write the code here
 		return None
 
@@ -123,6 +125,14 @@ class playerAdmin(threading.Thread):
 	def sendMsgToPlayer(self, msgContent):
 		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
 		return None
+
+	# sendMsgToOtherPlayer() - send message to other player
+	def sendMsgToOtherPlayer(self, msgContent):
+		for key in self.PLAYER_THREAD:
+			if key != self.CLIENTSOCKET:
+				self.PLAYER_THREAD[key].CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
+		return None
+
 
 	# prepNotification() - prepare notification message (send to clients)
 	def prepNotification(self, typeNotify, onObject):
