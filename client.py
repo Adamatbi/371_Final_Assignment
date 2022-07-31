@@ -68,7 +68,7 @@ def client_loop(game, service, player_num):
         game.updateDisplay()
 
 def main():
-    service = ClientService()
+    service = ClientService('localhost', 1234, 1024)
     game = ClientGame(700, 700, "Easter Egg Game")
     game.run()
 
