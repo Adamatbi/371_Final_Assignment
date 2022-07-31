@@ -70,18 +70,19 @@ class ServerRoom(threading.Thread):
     # run() - start the object
     def run(self):
 
-        # setup the connection 
+        # wait & setup the connection to each Player
         self.listenToPlayerOnRoom()
 
-        print("Next step")
+        # send the setup of the game
 
-        # Setup and run the egg
-        self.GAME_LIVE[0] = True
+        # trigger the 
         self.establishEggAdminThread()
+        
+        # start the game
+        self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
+
         # setup the eggAdmin thread
-        while self.GAME_LIVE:
-            time.sleep(1)
             
 
         # waiting for all player to be "READY" -> allow to start the game 
