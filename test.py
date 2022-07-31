@@ -9,7 +9,7 @@ SERVERADDRESS = "127.0.0.1"
 SERVERPORT = 16543
 SERVERBUF_SIZE = 2098
 FORMAT = "json"
-MAX_NUM_PLAYERS = 4
+MAX_NUM_PLAYERS = 2
 CONNECTED_PLAYERS = 0
 
 #Egg setup
@@ -33,9 +33,6 @@ def testServer_TCPClass():
 
 
 def main(): 
-	#testDict()
-	#for men in (DICT_EGGS_OBJ):
-	#	print(men.getCoordinate())
 	testServer_TCPClass()
 	for threads in PLAYER_THREAD:
 		threads.join()
