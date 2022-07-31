@@ -1,7 +1,14 @@
 import socket
 import threading
+import json
 
 class ClientService(threading.Thread):
+    coordinates = {
+        "eggs_coords": [],
+        "locked_coords": [],
+        "mouse_coords": []
+    }
+
     def __init__(self, server_address, server_port, buffer_size):
         threading.Thread.__init__(self)
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,5 +32,11 @@ class ClientService(threading.Thread):
             return self.client.recv(self.bufSize).decode()
         except socket.error as exc:
             print(exc)
+
+    def updateCoordinates(self, coords):
+        self.coordinates = json.loads(coords)
+
+    def extractCoordinates(self, key):
+        return self.coordinates[key]
 
 
