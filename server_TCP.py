@@ -88,13 +88,12 @@ class ServerRoom(threading.Thread):
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
-
-
-        # start countdown 
-
+        # start the clock (countdonw to end game):
+        threading.Thread(target = self.threadCountDownTimem).start()        
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
-
+        
+        
         # calculate the result -> send to all clients
 
         return None
@@ -151,16 +150,29 @@ class ServerRoom(threading.Thread):
     def waitPlayerBeReady(self):
         while self.CONNECTED_PLAYERS < self.MAXPLAYER:
             time.sleep(1)
+            #write code down here
         pass
 
     # establishEggAdminThread() - create the eggAdmin which manage the egg object
     def establishEggAdminThread(self):
-        pass
         
         # init the eggAdmin class:
         self.EGGADMIN_THREAD = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.PLAYER_THREAD,
             self.UNHATCHED_EGG, self.HATCHED_EGG, self.MAX_EGG, self.GAME_LIVE)
         return None
+
+    # threadCountDownTime() - thread will countdown and notice server to end game
+    def threadCountDownTime(self):
+        while self.GAME_LIVE:
+            time.sleep(1)
+            
+            # increase the current time
+            self.CURRENT_COUNTDOWN += 1
+
+            # Time get expired
+            if self.CURRENT_COUNTDOWN == self.COUNTDOWN_TIME:
+                break
+        return "STOP"
 
     # sendMsgToAllPlayer() - send message to all the clients via playerAdmin
     def sendMsgToAllPlayer(self, msgContent):
@@ -192,15 +204,3 @@ class ServerRoom(threading.Thread):
     def convertObjectToJson(self, anyObject):
         pass
 
-
-
-    #----------------------------------------------------
-    # READ/WRITE WITH MUTEX FUNCTIONS
-    #----------------------------------------------------
-
-    #         #Send confirmation message to the client/player
-    #         NewConnection.send(bytes("Player {}".format(NewAddress),"utf-8"))
-            
-    #         #Print confirmation message on the server's screen
-    #         print("{} has started".format(self.PLAYER_THREAD[NewAddress].getName()))
-    #     return None
