@@ -68,7 +68,8 @@ def client_loop(game, service, player_num):
         game.updateDisplay()
 
 def main():
-    service = ClientService()
+    service = ClientService('localhost', 1234, 1024)
+    service.run()
     game = ClientGame(700, 700, "Easter Egg Game")
     game.run()
 
@@ -95,6 +96,8 @@ def main():
                 run = False
 
     client_loop(game, service, player_num)
+    game.join()
+    service.join()
 
 
 def make_coords(coords):
@@ -108,19 +111,19 @@ def egg_handler(game, service):
 
     # Request server for egg coordinates
     coords = service.send("EGG")
-    coords_dic = json.loads(coords)
+    service.updateCoordinates(coords)
 
     # Draw eggs with server provided coordinates
-    coords_lst = coords_dic["egg_coords"]
+    coords_lst = service.extractCoordinates("egg_coords")
     for i, coord in enumerate(coords_lst):
         game.drawImage(easteregg, coord)
 
     # Request server for locked egg coordinates
     coords = service.send("LOCKED")
-    coords_dic = json.loads(coords)
+    service.updateCoordinates(coords)
     
     # Draw eggs with server provided coordinates
-    coords_lst = coords_dic["locked_coords"]
+    coords_lst = service.extractCoordinates("locked_coords")
     for i, coord in enumerate(coords_lst):
         game.drawImage(easteregglocked, coord)
 
@@ -133,10 +136,10 @@ def mouse_handler(game, service, cursors, player_num):
     # request other player's mice coordinates
     msg = service.send("MOUSE")
     coords = service.send(make_coords(pos))
-    coords_dic = json.loads(coords)
+    service.updateCoordinates(coords)
+
     # draw every cursor except players own cursor
-    coords_lst = coords_dic['mouse_coords']
-    
+    coords_lst = service.extractCoordinates('mouse_coords')
     for i, coord in enumerate(coords_lst):
         if i != player_num:
             game.drawImage(cursors[i], coord)
