@@ -6,6 +6,31 @@ Class PlayerThread
 """
 import socket
 import threading
+import json
+
+class serverMsg:
+	REQUESTTYPE = ""
+	OBJECTTYPE = ""
+	DATA = ""
+	XCOORDINATE = ""
+	YCOORDINATE = ""
+	VISIBLE = ""
+	LOCKSTATE = ""
+	OCCUPYSTATE = ""
+	OWNERID = ""
+
+	# constructor
+	def __init__(self, requestType, objectType, objectData, xCoorindate, yCoordinate,
+		visible, lockState, occupyState, ownerID):
+		self.REQUESTTYPE = requestType
+		self.OBJECTTYPE = objectType
+		self.XCOORDINATE = xCoorindate
+		self.YCOORDINATE = yCoordinate
+		self.VISIBLE = visible
+		self.LOCKSTATE = lockState
+		self.OCCUPYSTATE = occupyState
+		self.OWNERID = ownerID
+
 
 # playerThread - child of class Threading 
 class playerAdmin(threading.Thread):
@@ -14,6 +39,7 @@ class playerAdmin(threading.Thread):
 	PLAYER_THREAD = None
 	BUF_SIZE = 1024
 	MUTEX = None
+	LAST_MSG = ""		# QUEUE_MSG - collect & store user's request - keep the last request
 
 	# Gameplay properties
 	EGGHOLDING = None 	# EGGHOLDING - keep the egg object that players is currently working on
@@ -48,9 +74,24 @@ class playerAdmin(threading.Thread):
 
 			# valid request:
 			else:
-				print("{}: {}".format(self.threadID, msgData))
-				#self.sendMsgToPlayer("server got it!\n")
-				#write the code here
+				# Store the message -> allow to process the next one
+				self.LAST_MSG = msgData
+				print("{}: {}".format(self.threadID, self.LAST_MSG))
+				
+				# Acquire mutex to process:
+				self.MUTEX.acquire(1)
+
+				# Try to do handle request - playerAdmin only take care of LOCK & OCCUPY request:
+
+				# access LAST_MSG -> decode LAST_MSG
+
+				# "LOCK":
+
+				# "OCCUPY":
+
+				# Relaese the key for the next user
+				self.MUTEX.release()
+
 		return None
 
 	# lockEgg() - clients requests to lock an egg
@@ -60,29 +101,21 @@ class playerAdmin(threading.Thread):
 		# trigger notification flag
 		lockSuccess = False
 
-		# Obtain the key - to access DICT_EGG - timeout to 1 second -> prevent deadlock
-		self.MUTEX.acquire(1)
-		
 		# Access the egg 
 		egg = self.DICT_EGG[eggCoordinate]
 
 		# Use "try" and "finally" to guarantee action
 		# If egg is not being locked/occupied by anyone 
 		# -> allow to lock the egg -> trigger notification of success/failure
-		try:
-			if egg != None and egg.isLock() == False and egg.isOccupied == False:
-				# Switch lockState to True:
-				egg.setLock(True)
-				egg.setEggOwnerID = self.threadID
+		if egg != None and egg.isLock() == False and egg.isOccupied == False:
+			# Switch lockState to True:
+			egg.setLock(True)
+			egg.setEggOwnerID = self.threadID
 
-				# hold the egg in EGGHOLDING - Prevent deadlock:
-				self.EGGHOLDING = egg
-				lockSuccess = True
-			
-		# Release the key for next user:
-		finally:
-			self.MUTEX.release()
-
+			# hold the egg in EGGHOLDING - Prevent deadlock:
+			self.EGGHOLDING = egg
+			lockSuccess = True
+	
 		return lockSuccess
 
 
@@ -93,27 +126,19 @@ class playerAdmin(threading.Thread):
 		#trigger notification flag
 		occupySuccess = False
 
-		# Obtain the key - to access DICT_EGG - timeout to 1 second -> prevent deadlock
-		self.MUTEX.acquire(1)
-
 		# Access the egg
 		egg = self.DICT_EGG[eggCoordinate]
 
 		# If egg is being locked by the same person who occupy
 		# -> allow to occupy the egg -> trigger notification of success/failure
-		try:
-			if egg.isLock() == True and egg.getOwnerID() == self.threadID:
-				#Switch occupyState to True & visibleState to False:
-				egg.setOccupy(True)
-				egg.setVisible(False)
+		if egg != None and egg.isLock() == True and egg.getOwnerID() == self.threadID:
+			#Switch occupyState to True & visibleState to False:
+			egg.setOccupy(True)
+			egg.setVisible(False)
 
-				#release EGGHOLDING -> for the next egg:
-				self.EGGHOLDING = None
-				occupySuccess = True
-
-		# Relaese the key for the next user
-		finally:
-			self.MUTEX.release()
+			#release EGGHOLDING -> for the next egg:
+			self.EGGHOLDING = None
+			occupySuccess = True
 
 		return occupySuccess
 
@@ -134,12 +159,23 @@ class playerAdmin(threading.Thread):
 		return None
 
 
-	# prepNotification() - prepare notification message (send to clients)
-	def prepNotification(self, typeNotify, onObject):
-		prepMsg = ""
+    #----------------------------------------------------
+    # MESSAGE ENCODE/DECODE
+    #----------------------------------------------------
 
-		# typeNotify is True -> Success Notification
+	# decodePlayerMsg() - decode the player mssage to Dictionary
+	def decodeMsgToObject(self, userMsg):
+		decodeMsg = json.loads(userMsg)
 
-		# typeNotify is False -> Failure Notification
+		if decodeMsg['OBJECTTYPE'] =="Egg":
+			decodeMsg['DATA'] = json.loads(decodeMsg["DATA"])
+		return decodeMsg
 
-		return prepMsg
+	# prepMsgAsJson()
+	def prepMsgAsJson(self, requestType, objectType , anyObject):
+		finalMsg = serverMsg(requestType, objectType, self.convertToJson(anyObject))
+		return finalMsg
+
+	# convertMsgToJson() - convert egg object to json format
+	def convertMsgToJson(self, anyObject):
+		return json.dumps(anyObject.__dict__)
