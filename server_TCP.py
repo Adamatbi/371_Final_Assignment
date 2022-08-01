@@ -83,10 +83,10 @@ class ServerRoom(threading.Thread):
         threading.Thread(target = self.threadCountDownTimem).start()        
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
-        #if self.GAME_LIVE == "False":
-
+        self.sendMsgToAllPlayer("STOP")
 
         # calculate the result -> send to all clients
+
 
         return None
 
@@ -107,7 +107,6 @@ class ServerRoom(threading.Thread):
         # listen to until achieve maximum number of player
         self.SERVERSOCK.listen(self.MAXPLAYER)
 
-        print("SERVER IS UP")
         # while until all player connect -> put in PLAYERTHREAD
         while self.CONNECTED_PLAYERS < self.MAXPLAYER:
 
@@ -143,6 +142,7 @@ class ServerRoom(threading.Thread):
         # init the eggAdmin class:
         self.EGGADMIN_THREAD = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.PLAYER_THREAD,
             self.UNHATCHED_EGG, self.HATCHED_EGG, self.MAX_EGG, self.GAME_LIVE)
+
         return None
 
     # threadCountDownTime() - thread will countdown and notice server to end game
@@ -155,9 +155,17 @@ class ServerRoom(threading.Thread):
 
             # Time get expired
             if self.CURRENT_COUNTDOWN == self.COUNTDOWN_TIME:
-                self.GAME_LIVE = False
                 break
+        self.GAME_LIVE = False
         return None
+
+    # calculateFinalResult() - calculate final result return a message to send
+    def calculateFinalResult(self):
+        pass
+
+    #----------------------------------------------------
+    # UTILITY FUNCTIONS
+    #----------------------------------------------------
 
     # sendMsgToAllPlayer() - send message to all the clients via playerAdmin
     def sendMsgToAllPlayer(self, msgContent):
