@@ -35,16 +35,21 @@ class ServerRoom(threading.Thread):
 
     # CHANGE THIS NUMBER TO # OF CLIENTS YOU WANT RUNNING
     MAX_PLAYERS = 2
-
+    PLAYER_COUNT = 0
+    READY_COUNT = 0
+    
     EGG_COORDS = []
-    locked_eggs = {}
+    LOCKED_EGGS = {}
     MAX_EGGS = 20
+    EGG_COUNT = []              # a list object will be pass as reference 
     HOLD_TIME = 2
 
-    player_count = 0
-    ready_count = 0
-    player_scores = [0] * NUM_PLAYERS
-    mouse_coords = [(0,0)] * NUM_PLAYERS
+    GAME_LIVE = False
+    GAME_TIME = 90
+    CURRENT_TIME = 0
+
+    PLAYER_SCORES = [0] * MAX_PLAYERS
+    MOUSE_COORDS = [(0,0)] * MAX_PLAYERS
 
 
     #----------------------------------------------------
@@ -62,6 +67,7 @@ class ServerRoom(threading.Thread):
         self.MAX_PLAYERS = maxNumPlayers
         self.MAX_EGG = maxEggs
         self.HOLD_TIME = holdTime
+        self.EGG_COUNT.append(0)   
 
     # run() - start the object
     def run(self):
@@ -80,16 +86,15 @@ class ServerRoom(threading.Thread):
         self.countDownTime()       
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
-        self.sendMsgToAllPlayer("STOP")
+        #self.sendMsgToAllPlayer("STOP")
 
         # calculate the result -> send to all clients
-
 
         return None
 
 
     #----------------------------------------------------
-    # NETWORK MANAGEMENT FUNCTIONS
+    # PREPARE ALL THREAD FOR SERVER
     #----------------------------------------------------
 
     # listenToPlayerOnRoom() - accept connection -> add run each connection on a thread
@@ -111,33 +116,25 @@ class ServerRoom(threading.Thread):
             clientSocket, clientAddress = self.SERVERSOCK.accept()
             print("{} has connected".format(clientAddress))
 
-            # add player to the PLAYER_RESULT dictionary:
-            self.PLAYER_RESULT[clientAddress] = 0
+            # Increase number of connected players
+            self.CONNECTED_PLAYERS += 1
 
-            # add player thread to the PLAYER_THREAD dictionary:
-            playerThread = playerMaster.playerAdmin(clientAddress, "player" + str(self.CONNECTED_PLAYERS),
-                clientSocket, self.PLAYER_THREAD,4096, self.UNHATCHED_EGG, self.MUTEX)
-
-            # add player to PLAYER_THREAD
-            self.PLAYER_THREAD[clientAddress] = playerThread
+            # initiate/add player to playerThread:
+            playerThread = playerMaster.playerThread(self.CONNECTED_PLAYERS, clientSocket, 4096, self.MAX_PLAYERS, 
+                self.EGG_COORDS, self.LOCKED_EGGS, self.HOLD_TIME, self.PLAYER_SCORES, self.MOUSE_COORDS)
 
             # send welcome message
             self.sendMsgToSinglePlayer(clientAddress, "Welcome {}".format(self.PLAYER_THREAD[clientAddress].threadID))
 
             # Trigger the thread
             playerThread.start()
-
-            # Increase number of connected players
-            self.CONNECTED_PLAYERS += 1
-
         return None
 
     # establishEggAdminThread() - create the eggAdmin/thread_egg
     def establishThreadEgg(self):
-        
         # init the eggAdmin class:
         self.THREAD_EGG = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.EGG_SEM,
-            self.EGG_COORDS, self.MAX_EGG)
+            self.EGG_COORDS, self.MAX_EGG, self.EGG_COUNT)
 
         return None
 
@@ -147,33 +144,10 @@ class ServerRoom(threading.Thread):
             time.sleep(1)
             
             # increase the current time
-            self.CURRENT_COUNTDOWN += 1
+            self.CURRENT_TIME += 1
 
             # Time get expired
-            if self.CURRENT_COUNTDOWN == self.COUNTDOWN_TIME:
+            if self.CURRENT_TIME == self.GAME_TIME :
                 break
         self.GAME_LIVE = False
-        return None
-
-    # calculateFinalResult() - calculate final result return a message to send
-    def calculateFinalResult(self):
-        pass
-
-    #----------------------------------------------------
-    # UTILITY FUNCTIONS
-    #----------------------------------------------------
-
-    # sendMsgToAllPlayer() - send message to all the clients via playerAdmin
-    def sendMsgToAllPlayer(self, msgContent):
-
-        # loop through all the players in PLAYER_THREAD -> send message
-        for key in self.PLAYER_THREAD:
-            self.PLAYER_THREAD[key].sendMsgToPlayer(msgContent)
-        return None
-
-    # sendMsgToSinglePlayer() - send message to a particular players via playerAdmin
-    def sendMsgToSinglePlayer(self, playerAdress, msgContent):
-
-        # extract a particular player from PLAYER_THREAD by using address
-        self.PLAYER_THREAD[playerAdress].sendMsgToPlayer(msgContent)
         return None
