@@ -92,8 +92,8 @@ class ServerRoom(threading.Thread):
         threading.Thread(target = self.threadCountDownTimem).start()        
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
-        
-        
+
+
         # calculate the result -> send to all clients
 
         return None
@@ -172,7 +172,7 @@ class ServerRoom(threading.Thread):
             # Time get expired
             if self.CURRENT_COUNTDOWN == self.COUNTDOWN_TIME:
                 break
-        return "STOP"
+        return None
 
     # sendMsgToAllPlayer() - send message to all the clients via playerAdmin
     def sendMsgToAllPlayer(self, msgContent):
