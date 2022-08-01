@@ -161,11 +161,7 @@ class playerAdmin(threading.Thread):
 
 	# decodePlayerMsg() - decode the player mssage to Dictionary
 	def decodeMsgToObject(self, userMsg):
-		decodeMsg = json.loads(userMsg)
-
-		if decodeMsg['OBJECTTYPE'] =="Egg":
-			decodeMsg['DATA'] = json.loads(decodeMsg["DATA"])
-		return decodeMsg
+		return json.loads(userMsg)
 
 	# prepMsgAsJson()
 	def prepMsgAsJson(self, requestType, objectType , anyObject):
