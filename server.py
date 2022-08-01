@@ -10,8 +10,34 @@ PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
 
+class Server(threading.Thread):
+    coordinates = {
+        "eggs_coords": [],
+        "locked_coords": [],
+        "mouse_coords": []
+    }
 
-def threaded_client(conn, player_num):
+    def run(self):
+        threading.Thread.__init__(self)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind((SERVER, PORT))
+        except socket.error as exc:
+            str(exc)
+
+        sock.listen(program_master.NUM_PLAYERS)
+        
+        while program_master.player_count != program_master.NUM_PLAYERS:
+            print("Waiting...")
+            conn, addr = sock.accept()
+            print("Connected: ", addr)
+            threading.Thread(target=client_handler, args=(conn, program_master.player_count)).start()
+            program_master.player_count += 1
+
+        threading.Thread(target=program_master.threaded_eggs, args=()).start()
+
+
+def client_handler(conn, player_num):
     conn.send(str.encode("Connection established"))
     conn.recv(BUF_SIZE)
     program_master.ready_count += 1
@@ -88,25 +114,3 @@ def threaded_client(conn, player_num):
 
     print("Connection lost...")
     conn.close()
-
-def main():
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.bind((SERVER, PORT))
-    except socket.error as exc:
-        str(exc)
-
-    sock.listen(program_master.NUM_PLAYERS)
-    
-    threading.Thread(target=program_master.threaded_eggs, args=()).start()
-
-    while True:
-        print("Waiting...")
-        conn, addr = sock.accept()
-        print("Connected: ", addr)
-        threading.Thread(target=threaded_client, args=(conn, program_master.player_count)).start()
-        program_master.player_count += 1
-
-
-if __name__=='__main__':
-    main()

@@ -2,6 +2,12 @@ import socket
 import threading
 import json
 
+SERVER_ADDR = 'localhost'
+SERVER_PORT = 1234
+# may have to adjust buf size
+BUF_SIZE = 1024
+
+
 class ClientService(threading.Thread):
     coordinates = {
         "eggs_coords": [],
@@ -9,13 +15,12 @@ class ClientService(threading.Thread):
         "mouse_coords": []
     }
 
-    def __init__(self, server_address, server_port, buffer_size):
-        threading.Thread.__init__(self)
+    def run(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server = server_address
-        self.port = server_port
+        self.server = SERVER_ADDR
+        self.port = SERVER_PORT
         self.addr = (self.server, self.port)
-        self.bufSize = buffer_size
+        self.bufSize = BUF_SIZE
         self.id = self.connect()
         print(self.id)
 
