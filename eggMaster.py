@@ -11,13 +11,13 @@ import random
 import json
 
 class eggMsg:
-	DATATYPE = ""
+	REQUESTTYPE = ""
 	OBJECTTYPE = ""
 	DATA = ""
 
 	# constructor
-	def __init__(self, dataType, objectType, objectData):
-		self.DATATYPE = dataType
+	def __init__(self, requestType, objectType, objectData):
+		self.REQUESTTYPE = requestType
 		self.OBJECTTYPE = objectType
 		self.DATA = objectData
 
@@ -56,7 +56,7 @@ class eggAdmin(threading.Thread):
 				self.DICT_EGG[newEggPos] = newEggPos 
 				
 				# Send the egg object to client
-				sendEggMsg = self.prepMsgAsJson("data", newEgg)
+				sendEggMsg = self.prepMsgAsJson("add", "egg", newEgg)
 				print(self.convertToJson(sendEggMsg))
 				self.sendEggToClient(self.convertToJson(sendEggMsg))
 		return None
@@ -88,8 +88,8 @@ class eggAdmin(threading.Thread):
 		return None
 
 	# prepMsgAsJson()
-	def prepMsgAsJson(self, dataType, anyObject):
-		finalMsg = eggMsg(dataType, "Egg", self.convertToJson(anyObject))
+	def prepMsgAsJson(self, requestType, objectType, anyObject):
+		finalMsg = eggMsg(requestType, objectType, self.convertToJson(anyObject))
 		return finalMsg
 
 	# convertEggToJson() - convert egg object to json format
