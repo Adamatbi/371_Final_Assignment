@@ -44,7 +44,7 @@ class ServerRoom(threading.Thread):
     EGG_COUNT = []              # a list object will be pass as reference 
     HOLD_TIME = 2
 
-    GAME_LIVE = False
+    GAME_LIVE = [False]
     GAME_TIME = 90
     CURRENT_TIME = 0
 
@@ -82,7 +82,7 @@ class ServerRoom(threading.Thread):
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
-        # start the clock (countdonw to the end game):
+        # countdown -> time expired -> set GAME_LIVE = False
         self.countDownTime()       
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
