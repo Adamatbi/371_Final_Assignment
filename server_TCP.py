@@ -32,7 +32,6 @@ class ServerRoom(threading.Thread):
     
     # User_Management information & Data 
     CONNECTED_PLAYERS = 0
-    READY_PLAYERS = 0
     GAME_LIVE = [False]
     COUNTDOWN_TIME = 180            # The value of COUNTDOWN_TIME will be 180 seconds - 3 minutes
     CURRENT_COUNTDOWN = 0           # Time to count down
@@ -70,21 +69,13 @@ class ServerRoom(threading.Thread):
     # run() - start the object
     def run(self):
 
+        # setup the eggAdmin thread 
+        self.establishEggAdminThread()
+
         # wait & setup the connection to each Player
         self.listenToPlayerOnRoom()
 
-        # send the setup of the game - first 6 eggs
-
-
-        # setup the eggAdmin thread 
-        self.establishEggAdminThread()
-        
-        # waiting for all player to be "READY" -> allow to start the game 
-        # if all players are "READY" -> set GAME_LIVE = True & set value for COUNTDOWN_TIME
-        # send both GAME_LIVE & COUNTDOWN_TIME to clients
-        #self.waitPlayerBeReady()
-
-        # start the game
+        # all player has connect -> start the game
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
@@ -92,12 +83,12 @@ class ServerRoom(threading.Thread):
         threading.Thread(target = self.threadCountDownTimem).start()        
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
+        #if self.GAME_LIVE == "False":
 
 
         # calculate the result -> send to all clients
 
         return None
-
 
 
     #----------------------------------------------------
@@ -107,7 +98,7 @@ class ServerRoom(threading.Thread):
     # listenToPlayerOnRoom() - accept player connection and create playerAdmin thread for each plaeyr
     def listenToPlayerOnRoom(self):
 
-        # try to setup
+        # listen on channel
         try:
             self.SERVERSOCK.bind((self.SERVERADDRESS, self.SERVERPORT))
         except socket.error as socketSetupError:
@@ -146,13 +137,6 @@ class ServerRoom(threading.Thread):
 
         return None
 
-    # waitPlayerBeRead() - while loop wait for play send "READY" msg
-    def waitPlayerBeReady(self):
-        while self.CONNECTED_PLAYERS < self.MAXPLAYER:
-            time.sleep(1)
-            #write code down here
-        pass
-
     # establishEggAdminThread() - create the eggAdmin which manage the egg object
     def establishEggAdminThread(self):
         
@@ -171,6 +155,7 @@ class ServerRoom(threading.Thread):
 
             # Time get expired
             if self.CURRENT_COUNTDOWN == self.COUNTDOWN_TIME:
+                self.GAME_LIVE = False
                 break
         return None
 
