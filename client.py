@@ -96,6 +96,8 @@ def main():
                 run = False
 
     client_loop(game, service, player_num)
+    game.join()
+    service.join()
 
 
 def make_coords(coords):
