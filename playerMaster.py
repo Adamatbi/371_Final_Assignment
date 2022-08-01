@@ -20,18 +20,24 @@ class playerAdmin(threading.Thread):
 	# Gameplay properties
 	EGG_COORDS = None 		
 	LOCKED_EGGS = None
+	EGG_COUNT = None
+	HOLD_TIME = 2
+	PLAYER_SCORES = None
+	MOUSE_COORDS = None
 
 	# Constructor
-	def __init__(self, clientAddress, threadName, clientSocket, clientSocketThread,
-		bufferSize, eggCoords, lockedEggs):
+	def __init__(self, clientSocket, clientSocketThread, bufferSize, eggCoords,
+		lockedEggs, eggCount, holdTime, playerScores, mouseCoords):
 		threading.Thread.__init__(self)
-		self.threadID = clientAddress			# use clientAddress as threadID
-		self.name = threadName
 		self.CLIENTSOCKET = clientSocket
 		self.PLAYER_THREAD = clientSocketThread 
 		self.BUF_SIZE = bufferSize
 		self.EGG_COORDS = eggCoords
 		self.LOCKED_EGGS = lockedEggs
+		self.EGG_COUNT = eggCount
+		self.HOLD_TIME = holdTime
+		self.PLAYER_SCORES = playerScores
+		self.MOUSE_COORDS = mouseCoords
 
 
 	# run() - main execution of the player thread 
@@ -133,8 +139,8 @@ class playerAdmin(threading.Thread):
 		return tuple(coords)
 
     def read_coords(self, coords):
-    data_dic = json.loads(coords)    
-    return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
+	    data_dic = json.loads(coords)    
+	    return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
 
 
 	def encode_coords(self, coords, coord_type):
@@ -145,9 +151,10 @@ class playerAdmin(threading.Thread):
 	    
 	    return json.dumps({f"{coord_type}_coords":coords_list})
 
-
+	# check_coords() - function from program_master.py
 	def check_coords(self, msg, player, egg_count):
-	    
+	    check = False
+
 	    # format the string into tuple of ints
 	    click_coord = self.extractCoordinate(msg)
 
@@ -155,59 +162,51 @@ class playerAdmin(threading.Thread):
 	    self.EGG_SEM.acquire
 
 	    # check clicked if in locked_egg
-	    if click_coords in egg_coords:
-	    	egg_coords.remove(click_coords)
+	    if click_coords in self.EGG_COORDS:
+	    	self.EGG_COORDS.remove(click_coords)
 
 	    	# lock the egg
-	    	self.locked_eggs[player] = click_coords
-	    	self.EGG_COUNT -= 1
+	    	self.LOCKED_EGGS[player] = click_coords
+	    	self.EGG_COUNT[0] -= 1
+	    	check = True
 
+	    # acquire semaphore
+	    self.EGG_SEM.acquire()
+	    return check
+	    
+	# upon mouse release, check if player successfully got egg
+	def validate(self, msg, player, elapsed):
+	    check = False
+
+	    # extract coordinate from message
+	    click_coords = self.extractCoordinate(msg)
 
 	    # acquire semaphore
 	    self.EGG_SEM.acquire()
 
-	    # if clicked an egg
-	    if click_coords in egg_coords:
-	        egg_coords.remove(click_coords)
+	    # if valid 
+	    if float(elapsed) >= self.HOLD_TIME and self.LOCKED_EGGS[player] == click_coords:
+	    	self.LOCKED_EGGS.pop(player)
+	    	check = True
 
-	        # lock the egg
-	        locked_eggs[player] = click_coords
-	        egg_count -= 1
-
-	        EGG_SEM.release()
-	        return True
-	    # if did not click an egg
+	    # not valid
 	    else:
-	        EGG_SEM.release()
-	        return False
-	    
-	# upon mouse release, check if player successfully got egg
-	def validate(self, msg, player, elapsed):
-	    
-	    # extract infor from msg
-	    click_coords = self.extractCoordinate(msg)
-	    print(msg)
-	    print(player)
-	    print(elapsed)
+	    	self.EGG_COORDS.append(self.LOCKED_EGGS[player])
+	    	self.LOCKED_EGGS.pop(player)
+	    	check = False
 
-	    # if valid
-	    EGG_SEM.acquire()
-	    if float(elapsed) >= HOLD_TIME and locked_eggs[player] == click_coords:
-	        locked_eggs.pop(player)
-	        EGG_SEM.release()
-	        return True
-	    else:
-	        egg_coords.append(locked_eggs[player])
-	        locked_eggs.pop(player)
-	        EGG_SEM.release()
-	        return False
+	    # release semaphore
+	    self.EGG_SEM.release()
+
+	    return check
+
 
 	def inc_score(player_num):
-	    player_scores[player_num] += 1
+	    self.PLAYER_SCORES[player_num] += 1
 
 
 	def get_scores():
-	    return player_scores
+	    return self.PLAYER_SCORES
 
 	def get_locked():
 	    return dict.values(locked_eggs)
