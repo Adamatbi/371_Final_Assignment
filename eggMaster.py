@@ -5,29 +5,28 @@ Class PlayerThread
 - to trigger the thread -> eggAdmin.run(gameIsLive, dictEggObj)
 """
 import threading
-import egg
 import time
 import random
-import json
 
 class eggAdmin(threading.Thread):
 	EGG_SEM = None
 	EGG_COORDS = None
-	EGG_COUNT = 0
 	MAX_EGG = 0
+	EGG_COUNT = None 		# a list object will be pass as reference 
 
-	def __init__(self, threadID, threadName, eggSem, eggCoords, maxEggs):
+	def __init__(self, threadID, threadName, eggSem, eggCoords, maxEggs, eggCount):
 		threading.Thread.__init__(self)
 		self.THREADID = threadID
 		self.THREADNAME = threadName
 		self.EGG_SEM = eggSem
 		self.EGG_COORDS = eggCoords
 		self.MAX_EGG = maxEggs
+		self.EGG_COUNT = eggCount
 
 	# run() - override run() -> trigger the thread to start
 	def run(self):
 		while True:
-			if self.EGG_COUNT < sef.MAX_EGG:
+			if self.EGG_COUNT[0] < sef.MAX_EGG:
 				# acquire semaphore
 				self.EGG_SEM.acquire()
 
@@ -36,7 +35,7 @@ class eggAdmin(threading.Thread):
 
 				# add new egg to list of eggs
 				self.EGG_COORDS.append(pos)
-				self.EGG_COUNT += 1
+				self.EGG_COUNT[0] += 1
 
 				# release semaphore
 				self.EGG_SEM.release()
