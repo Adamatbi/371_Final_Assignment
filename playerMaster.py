@@ -109,58 +109,6 @@ class playerAdmin(threading.Thread):
 
 		return None
 
-	# lockEgg() - clients requests to lock an egg
-	# Client acquire key -> to update the egg.lockState & egg.ownerID
-	# Successfully lock -> True; otherwise -> False
-	def lockEgg(self, eggCoordinate):
-		# trigger notification flag
-		lockSuccess = False
-
-		# Access the egg 
-		egg = self.DICT_EGG[eggCoordinate]
-
-		# Use "try" and "finally" to guarantee action
-		# If egg is not being locked/occupied by anyone 
-		# -> allow to lock the egg -> trigger notification of success/failure
-		if egg != None and egg.isLock() == False and egg.isOccupied == False:
-			# Switch lockState to True:
-			egg.setLock(True)
-			egg.setEggOwnerID = self.threadID
-
-			# hold the egg in EGGHOLDING - Prevent deadlock:
-			self.EGGHOLDING = egg
-			lockSuccess = True
-	
-		return lockSuccess
-
-
-	# occupyEgg() - clients request to occupy an egg
-	# Client acquire key -> to update the egg.occupyState & egg.ownerID
-	# Successfully occupy -> True; otherwise -> False
-	def occupyEgg(self, eggCoordinate):
-		#trigger notification flag
-		occupySuccess = False
-
-		# Access the egg
-		egg = self.DICT_EGG[eggCoordinate]
-
-		# If egg is being locked by the same person who occupy
-		# -> allow to occupy the egg -> trigger notification of success/failure
-		if egg != None and egg.isLock() == True and egg.getOwnerID() == self.threadID:
-			#Switch occupyState to True & visibleState to False:
-			egg.setOccupy(True)
-			egg.setVisible(False)
-
-			#release EGGHOLDING -> for the next egg:
-			self.EGGHOLDING = None
-			occupySuccess = True
-
-		return occupySuccess
-
-	# rmvDisconnectPlayer - free the thread for next user (reuse)
-	def rmvDisconnectPlayer(self):
-		pass
-
 	# sendMsgToPlayer() - send message back to clients
 	def sendMsgToPlayer(self, msgContent):
 		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
@@ -189,7 +137,7 @@ class playerAdmin(threading.Thread):
     return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
 
 
-	def encode_coords(self, coords,coord_type):
+	def encode_coords(self, coords, coord_type):
 	    #returns json string of the form {"mouse_coords": [(player_1_x,player_1_y),(player_2_x,player_2_y),ect...]}
 	    coords_list = list()
 	    for coord in coords:
@@ -198,8 +146,7 @@ class playerAdmin(threading.Thread):
 	    return json.dumps({f"{coord_type}_coords":coords_list})
 
 
-	def check_coords(self, msg, player):
-	    global egg_count
+	def check_coords(self, msg, player, egg_count):
 	    
 	    # format the string into tuple of ints
 	    click_coord = self.extractCoordinate(msg)
@@ -238,7 +185,7 @@ class playerAdmin(threading.Thread):
 	def validate(self, msg, player, elapsed):
 	    
 	    # extract infor from msg
-	    click_coords = self.translateMsg(msg)
+	    click_coords = self.extractCoordinate(msg)
 	    print(msg)
 	    print(player)
 	    print(elapsed)
