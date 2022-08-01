@@ -105,26 +105,28 @@ class playerThread(threading.Thread):
 						self.sendMsgToPlayer("missed")
 		return None
 
-	# sendMsgToPlayer() - send message back to clients
-	def sendMsgToPlayer(self, msgContent):
-		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
-		return None
-
     #----------------------------------------------------
     # ULTILITY FUNCTIONS
     #----------------------------------------------------
 
+    # sendMsgToPlayer() - send message back to clients
+	def sendMsgToPlayer(self, msgContent):
+		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
+		return None
+
+	# extract coordinate in the message
     def extractCoordinate(self, msg):
         coords = msg.split(',')
         coords[0] = ((int(coords[0]))//100)*100
         coords[1] = ((int(coords[1]))//100)*100
         return tuple(coords)
 
+    # read coords 
     def read_coords(self, coords):
         data_dic = json.loads(coords)    
         return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
 
-
+    # convert coordinate to json format
     def encode_coords(self, coords, coord_type):
         #returns json string of the form {"mouse_coords": [(player_1_x,player_1_y),(player_2_x,player_2_y),ect...]}
         coords_list = list()
