@@ -16,10 +16,10 @@ class playerThread(threading.Thread):
 	BUF_SIZE = 1024
 
 	# Gameplay properties
-	MAX_PLAYERS = 4
+	MAX_PLAYERS = 4 			# default value - change after init the class
+	HOLD_TIME = 2 				# default value - can be changed after init the class
 	EGG_COORDS = None 		
 	LOCKED_EGGS = None
-	HOLD_TIME = 2
 	EGG_COUNT = None
 	PLAYER_SCORES = None 			
 	MOUSE_COORDS = None 			
