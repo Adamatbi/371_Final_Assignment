@@ -27,7 +27,6 @@ class ServerRoom(threading.Thread):
     SERVERADDRESS = "127.1.1.1"
     SERVERPORT = 1234
     SERVERBUF_SIZE = 1024
-    FORMAT = "json"
     MAXPLAYER = 2
     
     # User_Management information & Data 
@@ -79,8 +78,8 @@ class ServerRoom(threading.Thread):
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
-        # start the clock (countdonw to end game):
-        threading.Thread(target = self.threadCountDownTimem).start()        
+        # start the clock (countdonw to the end game):
+        self.countDownTime()       
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
         self.sendMsgToAllPlayer("STOP")
@@ -146,7 +145,7 @@ class ServerRoom(threading.Thread):
         return None
 
     # threadCountDownTime() - thread will countdown and notice server to end game
-    def threadCountDownTime(self):
+    def countDownTime(self):
         while self.GAME_LIVE:
             time.sleep(1)
             
