@@ -82,7 +82,7 @@ class ServerRoom(threading.Thread):
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
-        # countdown -> time expired -> set GAME_LIVE = False
+        # countDownTime -> keep the game run within allow time -> set GAME_LIVE = False
         self.countDownTime()       
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
