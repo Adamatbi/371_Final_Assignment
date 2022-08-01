@@ -14,10 +14,6 @@ class serverMsg:
 	DATA = ""
 	XCOORDINATE = ""
 	YCOORDINATE = ""
-	VISIBLE = ""
-	LOCKSTATE = ""
-	OCCUPYSTATE = ""
-	OWNERID = ""
 
 	# constructor
 	def __init__(self, requestType, objectType, objectData, xCoorindate, yCoordinate,
