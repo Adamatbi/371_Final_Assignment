@@ -10,28 +10,29 @@ import json
 
 
 # playerThread - child of class Threading 
-class playerAdmin(threading.Thread):
+class playerThread(threading.Thread):
 	# default configuration of playerThread
 	CLIENTSOCKET = None
-	PLAYER_THREAD = None
 	BUF_SIZE = 1024
-	MUTEX = None
 
 	# Gameplay properties
+	MAX_PLAYERS = 4
 	EGG_COORDS = None 		
 	LOCKED_EGGS = None
-	EGG_COUNT = None
 	HOLD_TIME = 2
-	PLAYER_SCORES = None
-	MOUSE_COORDS = None
+	EGG_COUNT = None
+	PLAYER_SCORES = None 			
+	MOUSE_COORDS = None 			
 
 	# Constructor
-	def __init__(self, clientSocket, clientSocketThread, bufferSize, eggCoords,
+	def __init__(self, ID, threadName, clientSocket, bufferSize, maxPlayer, eggCoords,
 		lockedEggs, eggCount, holdTime, playerScores, mouseCoords):
 		threading.Thread.__init__(self)
+		self.threadID = ID
 		self.CLIENTSOCKET = clientSocket
-		self.PLAYER_THREAD = clientSocketThread 
 		self.BUF_SIZE = bufferSize
+
+		self.MAX_PLAYERS = maxPlayer
 		self.EGG_COORDS = eggCoords
 		self.LOCKED_EGGS = lockedEggs
 		self.EGG_COUNT = eggCount
@@ -45,83 +46,69 @@ class playerAdmin(threading.Thread):
 		# while the game is running -> listen to any update
 		while True:
 			#listen to any message from client	
-			rawData = self.CLIENTSOCKET.recv(self.BUF_SIZE)
-			msgData = rawData.decode("utf_8")
+			data = self.CLIENTSOCKET.recv(self.BUF_SIZE)
+			msg = data.decode("utf_8")
 
-			# not valid data - receive 0 bytes
-			if not msgData:
-				#disconnect
-				print("{} disconnect from server".format(self.threadID))
-				#need to clean everything after the player get disconnected
-				#write the code here
-				break
+			# Player disconnect from server
+			if not msg:
+				print("Player {} Disconnecting...".format(self.threadID))
+            	return self.threadID
 
 			# valid request:
 			else:
-
 				# protocols for client info
-	            if msg == "READY":
-	                conn.send(str.encode(str(player_num)))
+				if msg == "READY":
+					self.sendMsgToPlayer(self.threadID)
 
-	            elif msg == "NUM":
-	                conn.send(str.encode(str(program_master.NUM_PLAYERS)))
+				elif msg == "NUM":
+					self.sendMsgToPlayer(self.MAX_PLAYERS)
 
-	            elif msg == "MOUSE":
-	                # sends clients other clients cursor coordinates
-	                conn.send(str.encode("ready for coords from player " + str(player_num)))
-	                data = conn.recv(BUF_SIZE)
-	                coords = program_master.read_coords(data.decode())
-	                program_master.mouse_coords[player_num] = coords
-	                conn.send(str.encode(program_master.encode_coords(program_master.mouse_coords,"mouse")))
+				elif msg == "MOUSE":
+					self.sendMsgToPlayer("ready for coords from player " + str(self.threadID))
+					data = conn.recv(self.BUF_SIZE)
+					coords = self.read_coords(data.decode("utf_8"))
+					self.sendMsgToPlayer(self.encode_coords(self.MOUSE_COORDS, "mouse"))
 
-	            # sends all clients egg coordinates
-	            elif msg == "EGG":
-	                conn.send(str.encode(program_master.encode_coords(program_master.egg_coords,'egg')))
+				# send all client egg coordinates
+				elif msg == "EGG":
+					self.sendMsgToPlayer(self.encode_coords(self.EGG_COORDS, "egg"))
 
-	            # sends all clients locked egg coordinates
-	            elif msg == "LOCKED":
-	                locked_eggs = list(program_master.get_locked())
-	                conn.send(str.encode(program_master.encode_coords(locked_eggs,'locked')))
-	            
-	            # sends the players scores
-	            elif msg == "SCORES":
-	                conn.send(str.encode(str(self.get_scores())))
+				# send all clients locked egg coordinates
+				elif msg == "LOCKED":
+					self.LOCKED_EGGS = list(self.get_locked())
+					self.sendMsgToPlayer(self.encode_coords(self.LOCKED_EGGS, 'locked'))
 
-	            elif msg == "INC_SCORE":
-	                program_master.inc_score(player_num)
-	                conn.send(str.encode(f"increased score of player {player_num+1}"))
+				# send players' score
+				elif msg == "SCORES":
+					self.sendMsgToPlayer(self.get_scores())
 
-	            # received a pair of coords to validate
-	            elif msg[0] == "V":
-	                print(msg)
-	                msg = msg[1:]
-	                msg = msg.split(':')
-	                if program_master.validate(msg[0], player_num, msg[1]):
-	                    conn.send(str.encode("true"))
-	                else:
-	                    conn.send(str.encode("false"))
+				# increase player score
+				elif msg == "INC_SCORE":
+					self.inc_score(self.threadID - 1)
+					self.sendMsgToPlayer(f"increased score of player {self.threadID}")
+				
+				# receive a pair of coords to validate
+				elif msg[0] == "V":	
+					print(msg)
+					msg = [1:]
+					msg = msg.split(":")
+					if self.validate(msg[0], self.threadID, msg[1]):
+						self.sendMsgToPlayer("True")
+					else:
+						self.sendMsgToPlayer("False")
 
-	            # a player clicked, check if on egg
-	            else:
-	                # check if msg in egg coords:
-	                if program_master.check_coords(msg, player_num):
-	                    conn.send(str.encode("clicked"))
-	                else:
-	                    conn.send(str.encode("missed"))
+				# a player clicked, check if on egg
+				else:
+					if self.check_coords(msg, player_num):
+						self.sendMsgToPlayer("clicked")
+					else:
+						self.sendMsgToPlayer("missed")
 		return None
 
 	# sendMsgToPlayer() - send message back to clients
 	def sendMsgToPlayer(self, msgContent):
 		self.CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
 		return None
-
-	# sendMsgToOtherPlayer() - send message to other player
-	def sendMsgToOtherPlayer(self, msgContent):
-		for key in self.PLAYER_THREAD:
-			if key != self.CLIENTSOCKET:
-				self.PLAYER_THREAD[key].CLIENTSOCKET.send(bytes(msgContent,"utf-8"))
-		return None
-
 
     #----------------------------------------------------
     # ULTILITY FUNCTIONS
@@ -154,7 +141,7 @@ class playerAdmin(threading.Thread):
         click_coord = self.extractCoordinate(msg)
 
         #acquire semaphore
-        self.EGG_SEM.acquire
+        self.EGG_SEM.acquire()
 
         # check clicked if in locked_egg
         if click_coords in self.EGG_COORDS:
@@ -165,8 +152,8 @@ class playerAdmin(threading.Thread):
             self.EGG_COUNT[0] -= 1
             check = True
 
-        # acquire semaphore
-        self.EGG_SEM.acquire()
+        # release semaphore
+        self.EGG_SEM.release()
         return check
         
     # upon mouse release, check if player successfully got egg
@@ -199,9 +186,8 @@ class playerAdmin(threading.Thread):
     def inc_score(player_num):
         self.PLAYER_SCORES[player_num] += 1
 
-
     def get_scores():
-        return self.PLAYER_SCORES
+        return str.encode(self.PLAYER_SCORES)
 
     def get_locked():
         return dict.values(self.LOCKED_EGGS)
