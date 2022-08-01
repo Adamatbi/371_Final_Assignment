@@ -58,9 +58,6 @@ class playerAdmin(threading.Thread):
 
 			# valid request:
 			else:
-				# Store the message -> allow to process the next one
-				self.LAST_MSG = msgData
-				print("{}: {}".format(self.threadID, self.LAST_MSG))
 
 				# protocols for client info
 	            if msg == "READY":
@@ -88,7 +85,7 @@ class playerAdmin(threading.Thread):
 	            
 	            # sends the players scores
 	            elif msg == "SCORES":
-	                conn.send(str.encode(str(program_master.get_scores())))
+	                conn.send(str.encode(str(self.get_scores())))
 
 	            elif msg == "INC_SCORE":
 	                program_master.inc_score(player_num)
@@ -111,8 +108,6 @@ class playerAdmin(threading.Thread):
 	                    conn.send(str.encode("clicked"))
 	                else:
 	                    conn.send(str.encode("missed"))
-
-
 		return None
 
 	# sendMsgToPlayer() - send message back to clients
@@ -133,80 +128,80 @@ class playerAdmin(threading.Thread):
     #----------------------------------------------------
 
     def extractCoordinate(self, msg):
-		coords = msg.split(',')
-    	coords[0] = ((int(coords[0]))//100)*100
-    	coords[1] = ((int(coords[1]))//100)*100
-		return tuple(coords)
+        coords = msg.split(',')
+        coords[0] = ((int(coords[0]))//100)*100
+        coords[1] = ((int(coords[1]))//100)*100
+        return tuple(coords)
 
     def read_coords(self, coords):
-	    data_dic = json.loads(coords)    
-	    return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
+        data_dic = json.loads(coords)    
+        return int(data_dic['mouse_coords'][0][0]), int(data_dic['mouse_coords'][0][1])
 
 
-	def encode_coords(self, coords, coord_type):
-	    #returns json string of the form {"mouse_coords": [(player_1_x,player_1_y),(player_2_x,player_2_y),ect...]}
-	    coords_list = list()
-	    for coord in coords:
-	        coords_list.append((coord[0],coord[1]))
-	    
-	    return json.dumps({f"{coord_type}_coords":coords_list})
+    def encode_coords(self, coords, coord_type):
+        #returns json string of the form {"mouse_coords": [(player_1_x,player_1_y),(player_2_x,player_2_y),ect...]}
+        coords_list = list()
+        for coord in coords:
+            coords_list.append((coord[0],coord[1]))
+        
+        return json.dumps({f"{coord_type}_coords":coords_list})
 
-	# check_coords() - function from program_master.py
-	def check_coords(self, msg, player, egg_count):
-	    check = False
+    # check_coords() - function from program_master.py
+    def check_coords(self, msg, player, egg_count):
+        check = False
 
-	    # format the string into tuple of ints
-	    click_coord = self.extractCoordinate(msg)
+        # format the string into tuple of ints
+        click_coord = self.extractCoordinate(msg)
 
-	    #acquire semaphore
-	    self.EGG_SEM.acquire
+        #acquire semaphore
+        self.EGG_SEM.acquire
 
-	    # check clicked if in locked_egg
-	    if click_coords in self.EGG_COORDS:
-	    	self.EGG_COORDS.remove(click_coords)
+        # check clicked if in locked_egg
+        if click_coords in self.EGG_COORDS:
+            self.EGG_COORDS.remove(click_coords)
 
-	    	# lock the egg
-	    	self.LOCKED_EGGS[player] = click_coords
-	    	self.EGG_COUNT[0] -= 1
-	    	check = True
+            # lock the egg
+            self.LOCKED_EGGS[player] = click_coords
+            self.EGG_COUNT[0] -= 1
+            check = True
 
-	    # acquire semaphore
-	    self.EGG_SEM.acquire()
-	    return check
-	    
-	# upon mouse release, check if player successfully got egg
-	def validate(self, msg, player, elapsed):
-	    check = False
+        # acquire semaphore
+        self.EGG_SEM.acquire()
+        return check
+        
+    # upon mouse release, check if player successfully got egg
+    def validate(self, msg, player, elapsed):
+        check = False
 
-	    # extract coordinate from message
-	    click_coords = self.extractCoordinate(msg)
+        # extract coordinate from message
+        click_coords = self.extractCoordinate(msg)
 
-	    # acquire semaphore
-	    self.EGG_SEM.acquire()
+        # acquire semaphore
+        self.EGG_SEM.acquire()
 
-	    # if valid 
-	    if float(elapsed) >= self.HOLD_TIME and self.LOCKED_EGGS[player] == click_coords:
-	    	self.LOCKED_EGGS.pop(player)
-	    	check = True
+        # if valid 
+        if float(elapsed) >= self.HOLD_TIME and self.LOCKED_EGGS[player] == click_coords:
+            self.LOCKED_EGGS.pop(player)
+            check = True
 
-	    # not valid
-	    else:
-	    	self.EGG_COORDS.append(self.LOCKED_EGGS[player])
-	    	self.LOCKED_EGGS.pop(player)
-	    	check = False
+        # not valid
+        else:
+            self.EGG_COORDS.append(self.LOCKED_EGGS[player])
+            self.LOCKED_EGGS.pop(player)
+            check = False
 
-	    # release semaphore
-	    self.EGG_SEM.release()
+        # release semaphore
+        self.EGG_SEM.release()
 
-	    return check
-
-
-	def inc_score(player_num):
-	    self.PLAYER_SCORES[player_num] += 1
+        return check
 
 
-	def get_scores():
-	    return self.PLAYER_SCORES
+    def inc_score(player_num):
+        self.PLAYER_SCORES[player_num] += 1
 
-	def get_locked():
-	    return dict.values(locked_eggs)
+
+    def get_scores():
+        return self.PLAYER_SCORES
+
+    def get_locked():
+        return dict.values(self.LOCKED_EGGS)
