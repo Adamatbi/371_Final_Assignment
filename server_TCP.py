@@ -73,23 +73,25 @@ class ServerRoom(threading.Thread):
         # wait & setup the connection to each Player
         self.listenToPlayerOnRoom()
 
-        # send the setup of the game
+        # send the setup of the game - first 6 eggs
 
-        # trigger the 
+
+        # setup the eggAdmin thread 
         self.establishEggAdminThread()
         
+        # waiting for all player to be "READY" -> allow to start the game 
+        # if all players are "READY" -> set GAME_LIVE = True & set value for COUNTDOWN_TIME
+        # send both GAME_LIVE & COUNTDOWN_TIME to clients
+        #self.waitPlayerBeReady()
+
         # start the game
         self.GAME_LIVE[0] = True
         self.EGGADMIN_THREAD.start()
 
-        # setup the eggAdmin thread
-            
 
-        # waiting for all player to be "READY" -> allow to start the game 
-        # if all players are "READY" -> set GAME_LIVE = True & set value for COUNTDOWN_TIME
-        # send both GAME_LIVE & COUNTDOWN_TIME to clients
 
         # start countdown 
+
 
         # after COUNTDOWN_TIME expired -> send msg to all clients to "STOP" the game
 
@@ -116,7 +118,7 @@ class ServerRoom(threading.Thread):
         self.SERVERSOCK.listen(self.MAXPLAYER)
 
         print("SERVER IS UP")
-        # while until all connect
+        # while until all player connect -> put in PLAYERTHREAD
         while self.CONNECTED_PLAYERS < self.MAXPLAYER:
 
             # accept client connection
@@ -145,8 +147,15 @@ class ServerRoom(threading.Thread):
 
         return None
 
+    # waitPlayerBeRead() - while loop wait for play send "READY" msg
+    def waitPlayerBeReady(self):
+        while self.CONNECTED_PLAYERS < self.MAXPLAYER:
+            time.sleep(1)
+        pass
+
     # establishEggAdminThread() - create the eggAdmin which manage the egg object
     def establishEggAdminThread(self):
+        pass
         
         # init the eggAdmin class:
         self.EGGADMIN_THREAD = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.PLAYER_THREAD,
