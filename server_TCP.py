@@ -18,6 +18,7 @@ import egg
 
 #Class ServerRoom:
 class ServerRoom(threading.Thread):
+
     #----------------------------------------------------
     # PROPERTIES
     #----------------------------------------------------
@@ -27,43 +28,40 @@ class ServerRoom(threading.Thread):
     SERVERADDRESS = "127.1.1.1"
     SERVERPORT = 1234
     SERVERBUF_SIZE = 1024
-    MAXPLAYER = 2
-    
-    # User_Management information & Data 
-    CONNECTED_PLAYERS = 0
-    GAME_LIVE = [False]
-    COUNTDOWN_TIME = 180            # The value of COUNTDOWN_TIME will be 180 seconds - 3 minutes
-    CURRENT_COUNTDOWN = 0           # Time to count down
-    PLAYER_RESULT = {}              # Dictionary of user info: key - PlayerID | value: Address & Port Number
-    PLAYER_THREAD = {}              # Dictionary of Player
-    EGGADMIN_THREAD = None          # EggAdmin thread -> manage/create/kill all eggs
-    MUTEX = threading.Lock()        # mutex for locking access to UNHATCHED
+    THREAD_EGG = None
 
-    # Gameplay Information & Data
-    MAX_EGG = 20
+    # Properties from program_master
+    EGG_SEM = threading.Semaphore()
 
-    # Dictionary of eggs object: key - eggs's coordinate | value: the egg objects
-    # New Eggs will be added to the dictionary - UNHATCHED
-    # HATCHED-> Calculate final score -> store in PLAYER_SUMMARY 
-    UNHATCHED_EGG = {}       
-    HATCHED_EGG = []
+    # CHANGE THIS NUMBER TO # OF CLIENTS YOU WANT RUNNING
+    MAX_PLAYERS = 2
 
-    # Dictionary of players: key - playerID | value: players' score
-    PLAYER_SUMMARY = []
+    EGG_COORDS = []
+    locked_eggs = {}
+    MAX_EGGS = 20
+    HOLD_TIME = 2
+
+    player_count = 0
+    ready_count = 0
+    player_scores = [0] * NUM_PLAYERS
+    mouse_coords = [(0,0)] * NUM_PLAYERS
 
 
     #----------------------------------------------------
     # GENERAL_ADMIN FUNCTIONS
     #----------------------------------------------------
 
-    # __init__() - The constructor of class Server
-    def __init__(self, serverAddress, serverPort, bufferSize, maxNumPlayers):
+    # __init__() - When initiate the Server -> allow to modify the Properties
+    def __init__(self, serverAddress, serverPort, bufferSize, maxPlayers,
+        maxEggs, holdTime):
         threading.Thread.__init__(self)
         self.SERVERSOCK = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.SERVERADDRESS = serverAddress
         self.SERVERPORT = serverPort
         self.SERVERBUF_SIZE = bufferSize
-        self.MAXPLAYER = maxNumPlayers
+        self.MAX_PLAYERS = maxNumPlayers
+        self.MAX_EGG = maxEggs
+        self.HOLD_TIME = holdTime
 
     # run() - start the object
     def run(self):
@@ -94,7 +92,7 @@ class ServerRoom(threading.Thread):
     # NETWORK MANAGEMENT FUNCTIONS
     #----------------------------------------------------
 
-    # listenToPlayerOnRoom() - accept player connection and create playerAdmin thread for each plaeyr
+    # listenToPlayerOnRoom() - accept connection -> add run each connection on a thread
     def listenToPlayerOnRoom(self):
 
         # listen on channel
@@ -131,20 +129,19 @@ class ServerRoom(threading.Thread):
 
             # Increase number of connected players
             self.CONNECTED_PLAYERS += 1
-            print(self.CONNECTED_PLAYERS)
 
         return None
 
-    # establishEggAdminThread() - create the eggAdmin which manage the egg object
-    def establishEggAdminThread(self):
+    # establishEggAdminThread() - create the eggAdmin/thread_egg
+    def establishThreadEgg(self):
         
         # init the eggAdmin class:
-        self.EGGADMIN_THREAD = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.PLAYER_THREAD,
-            self.UNHATCHED_EGG, self.HATCHED_EGG, self.MAX_EGG, self.GAME_LIVE)
+        self.THREAD_EGG = eggMaster.eggAdmin("eggAdmin", "eggAdmin", self.EGG_SEM,
+            self.EGG_COORDS, self.MAX_EGG)
 
         return None
 
-    # threadCountDownTime() - thread will countdown and notice server to end game
+    # CountDownTime() - thread will countdown and notice server to end game
     def countDownTime(self):
         while self.GAME_LIVE:
             time.sleep(1)
@@ -180,19 +177,3 @@ class ServerRoom(threading.Thread):
         # extract a particular player from PLAYER_THREAD by using address
         self.PLAYER_THREAD[playerAdress].sendMsgToPlayer(msgContent)
         return None
-
-    # sendInvitationToRoom() - allow the host to send his/her address & port number (of the room) to the client
-    #this is one time message - user's have to trigger manually each time
-    def sendInvitationToJoinRoom(self, clientAddress, clientPortNumber):
-        udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.sendto(bytes(self.SERVERADDRESS & ";" & self.SERVERPORT),(clientAddress, clientPortNumber))
-        return None
-
-    # convertMsgToJson() - convert the message to json format
-    def convertMsgToJson(self):
-        pass
-
-    # convertObjectToJson() - convert an object to message in json format
-    def convertObjectToJson(self, anyObject):
-        pass
-
