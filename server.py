@@ -9,7 +9,8 @@ SERVER = 'localhost'
 PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
-
+ENDTIME = 10
+PLAYER_THREAD = []
 class Server(threading.Thread):
     coordinates = {
         "eggs_coords": [],
@@ -18,6 +19,8 @@ class Server(threading.Thread):
     }
 
     def run(self):
+        global ENDTIME
+        GAME_LIVE = True
         threading.Thread.__init__(self)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
@@ -31,13 +34,24 @@ class Server(threading.Thread):
             print("Waiting...")
             conn, addr = sock.accept()
             print("Connected: ", addr)
-            threading.Thread(target=client_handler, args=(conn, program_master.player_count)).start()
+            PLAYER_THREAD.append(threading.Thread(target=client_handler, args=(conn, program_master.player_count, lambda: GAME_LIVE)))
+            PLAYER_THREAD[-1].start()
             program_master.player_count += 1
 
-        threading.Thread(target=program_master.threaded_eggs, args=()).start()
+        threadegg = threading.Thread(target=program_master.threaded_eggs)
+        threadegg.daemon = True
+        threadegg.start()
+
+        # clock to end game
+        clockCount()
+        GAME_LIVE = False
+
+        for player in PLAYER_THREAD:
+            player.join()
+        return None
 
 
-def client_handler(conn, player_num):
+def client_handler(conn, player_num, gameLive):
     conn.send(str.encode("Connection established"))
     conn.recv(BUF_SIZE)
     program_master.ready_count += 1
@@ -49,11 +63,13 @@ def client_handler(conn, player_num):
 
     # assigns player num, client uses to determine other clients data
     conn.send(str.encode(str(player_num)))
-
     while True:
         data = conn.recv(BUF_SIZE)
         msg = data.decode()
-        
+
+        if gameLive() == False:
+            break
+
         # if someone leaves, make room for another person to join
         # could probably be handled better -- quite buggy atm
         if not data:
@@ -63,12 +79,12 @@ def client_handler(conn, player_num):
             break
         else:
             # protocols for client info
-            if msg == "READY":
+            if msg == "ISEND":
+                conn.send(str.encode("NO"))
+            elif msg == "READY":
                 conn.send(str.encode(str(player_num)))
-
             elif msg == "NUM":
                 conn.send(str.encode(str(program_master.NUM_PLAYERS)))
-
             elif msg == "MOUSE":
                 # sends clients other clients cursor coordinates
                 conn.send(str.encode("ready for coords from player " + str(player_num)))
@@ -111,6 +127,13 @@ def client_handler(conn, player_num):
                     conn.send(str.encode("clicked"))
                 else:
                     conn.send(str.encode("missed"))
-
     print("Connection lost...")
     conn.close()
+
+def clockCount():
+    global ENDTIME
+    while ENDTIME:
+        time.sleep(1)
+        ENDTIME -= 1
+        print(ENDTIME)
+    return None

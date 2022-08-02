@@ -14,9 +14,10 @@ class ClientGame(threading.Thread):
     KEYDOWN = pygame.KEYDOWN
     R = pygame.K_r
     J = pygame.K_j
-
+    
     def __init__(self, width, height, caption):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.width = width
         self.height = height
         self.caption = caption

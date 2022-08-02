@@ -19,7 +19,6 @@ ready_count = 0
 player_scores = [0] * NUM_PLAYERS
 mouse_coords = [(0,0)] * NUM_PLAYERS
 
-
 def threaded_eggs():
     global egg_count
     while True:
@@ -34,6 +33,7 @@ def threaded_eggs():
             # add new egg to list of eggs
             egg_coords.append(pos)
             egg_count += 1
+            print(pos)
             # release semaphore
             EGG_SEM.release()
         else:
