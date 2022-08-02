@@ -11,6 +11,9 @@ class ClientGame(threading.Thread):
     QUIT = pygame.QUIT
     MOUSEBUTTONDOWN = pygame.MOUSEBUTTONDOWN
     MOUSEBUTTONUP = pygame.MOUSEBUTTONUP
+    KEYDOWN = pygame.KEYDOWN
+    R = pygame.K_r
+    J = pygame.K_j
 
     def __init__(self, width, height, caption):
         threading.Thread.__init__(self)

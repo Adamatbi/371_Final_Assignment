@@ -62,11 +62,10 @@ def encode_coords(coords,coord_type):
 
 def check_coords(msg, player):
     global egg_count
+    check = False
     # format the string into tuple of ints
-    click_coords = msg.split(',')
-    click_coords[0] = ((int(click_coords[0]))//100)*100
-    click_coords[1] = ((int(click_coords[1]))//100)*100
-    click_coords = tuple(click_coords)
+    click_coords = extractCoordinates(msg)
+
     # acquire semaphore
     EGG_SEM.acquire()
     # if clicked an egg
@@ -75,19 +74,16 @@ def check_coords(msg, player):
         # lock the egg
         locked_eggs[player] = click_coords
         egg_count -= 1
-        EGG_SEM.release()
-        return True
+        check = True
     # if did not click an egg
-    else:
-        EGG_SEM.release()
-        return False
+    
+    EGG_SEM.release()
+    return check
     
 # upon mouse release, check if player successfully got egg
 def validate(msg, player, elapsed):
-    click_coords = msg.split(',')
-    click_coords[0] = ((int(click_coords[0]))//100)*100
-    click_coords[1] = ((int(click_coords[1]))//100)*100
-    click_coords = tuple(click_coords)
+    check = False
+    click_coords = extractCoordinates(msg)
     print(msg)
     print(player)
     print(elapsed)
@@ -95,13 +91,20 @@ def validate(msg, player, elapsed):
     EGG_SEM.acquire()
     if float(elapsed) >= HOLD_TIME and locked_eggs[player] == click_coords:
         locked_eggs.pop(player)
-        EGG_SEM.release()
-        return True
+        check = True
     else:
         egg_coords.append(locked_eggs[player])
         locked_eggs.pop(player)
-        EGG_SEM.release()
-        return False
+    
+    EGG_SEM.release()
+    return check
+
+def extractCoordinates(msg):
+    click_coords = msg.split(',')
+    click_coords[0] = ((int(click_coords[0]))//100)*100
+    click_coords[1] = ((int(click_coords[1]))//100)*100
+    return tuple(click_coords)
+    
 
 def inc_score(player_num):
     player_scores[player_num] += 1

@@ -3,6 +3,7 @@ import time
 
 from client_game import ClientGame
 from client_service import ClientService
+from server import Server
 
 # Color & Font
 BLACK = (0, 0, 0)
@@ -68,15 +69,18 @@ def client_loop(game, service, player_num):
         game.updateDisplay()
 
 def main():
-    service = ClientService('localhost', 1234, 1024)
-    service.run()
+    
     game = ClientGame(700, 700, "Easter Egg Game")
     game.run()
+    
+    service = None
+    server = None
 
     easterbg = game.loadImage("img", "easterbg.jpg", (700, 700))
     game.drawImage(easterbg, (0, 0))
     game.drawText("Easter Egg Game", DEFAULT_FONT, 100, RED, 70, 50)
-    game.drawText("Click to Play!", DEFAULT_FONT, 60, RED, 220, 400)
+    game.drawText("Press R to create room", DEFAULT_FONT, 60, RED, 100, 200)
+    game.drawText("Press J to join room", DEFAULT_FONT, 60, RED, 100, 300)
     game.updateDisplay()
 
     # initialized later via connection_handler
@@ -89,14 +93,21 @@ def main():
                 game.quit()
                 run = False
 
-            elif event.type == game.MOUSEBUTTONDOWN:
-                # Wait for other players
-                player_num = connection_handler(game, service)
-                # Begin game
-                run = False
+            elif event.type == game.KEYDOWN:
+                if event.key == game.R:
+                    Server().start()
+
+                elif event.key == game.J:
+                    service = ClientService()
+                    service.start()
+                    # Wait for other players
+                    player_num = connection_handler(game, service)
+                    # Begin game
+                    run = False
 
     client_loop(game, service, player_num)
     game.join()
+    server.join()
     service.join()
 
 
