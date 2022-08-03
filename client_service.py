@@ -43,6 +43,3 @@ class ClientService(threading.Thread):
 
     def extractCoordinates(self, key):
         return self.coordinates[key]
-
-    def receiveData(self):
-        return self.client.recv(self.bufSize).decode()

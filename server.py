@@ -79,9 +79,7 @@ def client_handler(conn, player_num, gameLive):
             break
         else:
             # protocols for client info
-            if msg == "ISEND":
-                conn.send(str.encode("NO"))
-            elif msg == "READY":
+            if msg == "READY":
                 conn.send(str.encode(str(player_num)))
             elif msg == "NUM":
                 conn.send(str.encode(str(program_master.NUM_PLAYERS)))
