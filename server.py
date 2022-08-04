@@ -1,7 +1,6 @@
 import socket
 import threading
 import time
-import random
 
 import program_master
 
@@ -9,7 +8,7 @@ SERVER = 'localhost'
 PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
-ENDTIME = 10
+ENDTIME = 30
 PLAYER_THREAD = []
 class Server(threading.Thread):
     coordinates = {
@@ -71,7 +70,6 @@ def client_handler(conn, player_num, gameLive):
             break
 
         # if someone leaves, make room for another person to join
-        # could probably be handled better -- quite buggy atm
         if not data:
             print("Disconnecting...")
             program_master.ready_count -= 1
@@ -107,6 +105,9 @@ def client_handler(conn, player_num, gameLive):
             elif msg == "INC_SCORE":
                 program_master.inc_score(player_num)
                 conn.send(str.encode(f"increased score of player {player_num+1}"))
+
+            elif msg == "TIME":
+                conn.send(str.encode(str(ENDTIME)))
 
             # received a pair of coords to validate
             elif msg[0] == "V":
