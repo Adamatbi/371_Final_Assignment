@@ -1,8 +1,7 @@
-import threading
 import pygame
 import os
 
-class ClientGame(threading.Thread):
+class ClientGame():
     # Window and Clock
     WINDOW = None
     CLOCK = None
@@ -16,8 +15,6 @@ class ClientGame(threading.Thread):
     J = pygame.K_j
     
     def __init__(self, width, height, caption):
-        threading.Thread.__init__(self)
-        self.daemon = True
         self.width = width
         self.height = height
         self.caption = caption
@@ -36,6 +33,13 @@ class ClientGame(threading.Thread):
 
     def loadImage(self, directory, file, size):
         return pygame.transform.scale(pygame.image.load(os.path.join(directory, file)), size)
+    
+    def loadCursors(self, num_players):
+        cursors = []
+        for i in range(1, num_players + 1):
+            cursors.append(self.loadImage("img", f"p{i}.png", (50, 50)))
+
+        return cursors
 
     def drawText(self, text, font, size, color, x, y):
         fontSize = pygame.font.SysFont(font, size)

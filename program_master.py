@@ -105,10 +105,8 @@ def extractCoordinates(msg):
     click_coords[1] = ((int(click_coords[1]))//100)*100
     return tuple(click_coords)
     
-
 def inc_score(player_num):
     player_scores[player_num] += 1
-
 
 def get_scores():
     return player_scores
