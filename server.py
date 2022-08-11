@@ -4,12 +4,17 @@ import time
 
 import program_master
 
-SERVER = 'localhost'
+# change the server & port number here
+SERVER = "207.23.210.122"
 PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
-ENDTIME = 30
+
+# ENDTIME - game time
+ENDTIME = 60
 PLAYER_THREAD = []
+
+# Server class - to create the host/room for the game
 class Server(threading.Thread):
     coordinates = {
         "eggs_coords": [],
@@ -17,18 +22,24 @@ class Server(threading.Thread):
         "mouse_coords": []
     }
 
+    # the thread host - main function to run the thread
     def run(self):
         global ENDTIME
         GAME_LIVE = True
         threading.Thread.__init__(self)
+
+        # open the socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # bind the socket to the SERVER & PORT
             sock.bind((SERVER, PORT))
         except socket.error as exc:
             str(exc)
 
+        # listen on the socket
         sock.listen(program_master.NUM_PLAYERS)
         
+        # waiting for players to connect
         while program_master.player_count != program_master.NUM_PLAYERS:
             print("Waiting...")
             conn, addr = sock.accept()
@@ -37,6 +48,7 @@ class Server(threading.Thread):
             PLAYER_THREAD[-1].start()
             program_master.player_count += 1
 
+        # initiate "egg" thread - to generat the new egg 
         threadegg = threading.Thread(target=program_master.threaded_eggs)
         threadegg.daemon = True
         threadegg.start()
@@ -49,7 +61,7 @@ class Server(threading.Thread):
             player.join()
         return None
 
-
+# the player thread - control the state of the game including lock mechanism, countdown time, calculate score
 def client_handler(conn, player_num, gameLive):
     conn.send(str.encode("Connection established"))
     conn.recv(BUF_SIZE)
@@ -129,6 +141,7 @@ def client_handler(conn, player_num, gameLive):
     print("Connection lost...")
     conn.close()
 
+# clocCount - countdown the time of the game - change the time for longer game
 def clockCount():
     global ENDTIME
     while ENDTIME:
