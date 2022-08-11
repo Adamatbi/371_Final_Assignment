@@ -15,6 +15,7 @@ class ClientService(threading.Thread):
         "mouse_coords": []
     }
 
+    #initializes variables and connects to server.
     def run(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server = SERVER_ADDR
@@ -24,6 +25,7 @@ class ClientService(threading.Thread):
         self.id = self.connect()
         print(self.id)
 
+    #create tcp connection with server
     def connect(self):
         try:
             self.client.connect(self.addr)
@@ -31,6 +33,7 @@ class ClientService(threading.Thread):
         except socket.error as exc:
             print(exc)
 
+    #encode and send data packet to server
     def send(self, data):
         try:
             self.client.send(str.encode(data))
@@ -38,8 +41,10 @@ class ClientService(threading.Thread):
         except socket.error as exc:
             print(exc)
 
+    #update coordinates from server
     def updateCoordinates(self, coords):
         self.coordinates = json.loads(coords)
 
+    #return coordinates value from internal state
     def extractCoordinates(self, key):
         return self.coordinates[key]
