@@ -2,7 +2,7 @@ import socket
 import threading
 import json
 
-SERVER_ADDR = 'localhost'
+SERVER_ADDR = '207.23.210.122'
 SERVER_PORT = 1234
 # may have to adjust buf size
 BUF_SIZE = 1024
