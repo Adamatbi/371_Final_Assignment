@@ -13,6 +13,7 @@ DEFAULT_FONT = "comics"
 ESCAPE = False
 PLAYER_SCORES = ""
 
+# Creates a JSON with client/server protocol including clients current mouse coordinates
 def make_coords(coords):
     return json.dumps({"mouse_coords":[(coords[0],coords[1])]})
 
@@ -57,7 +58,11 @@ def mouse_handler(game, service, cursors, player_num):
 
     # draw player cursor on top of other players
     game.drawImage(cursors[player_num], pos)
-  
+
+# Handles displaying the current scores on each game loop
+# flag determines the current state of the game
+# if "PLAY" will print scores while game is still being played
+# if "" will print scores on the results screen 
 def score_handler(game, service, num_players, flag = ""):
     global PLAYER_SCORES
     if flag == "PLAY":
@@ -101,7 +106,9 @@ def time_handler(game, service):
     game_time = int(service.send("TIME"))
     game.drawText(f"Time: {game_time}", DEFAULT_FONT, 35, RED, 300, 20)
 
-# determines if a point was scored or not
+# Handles the scored points for the player
+# If player successfully captures an egg will update the players current score
+# and send it to the server
 def point_handler(game, service, timer):
     elapsed = time.time() - timer
     position = game.getMousePosition()
@@ -147,6 +154,9 @@ def setup_client_host():
 
     return game, service, player_num
 
+# On every loop of the game it will be updated with the current state of the game:
+# Server will supply egg locations, other clients cursor locations, current scores, and remaning time
+# Client will update server with their own score and current cursor position
 def client_loop(game, service, player_num):
     num_players = int(service.send("NUM"))
     print(num_players)
